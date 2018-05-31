@@ -1,4 +1,4 @@
-module Lib
+module Pymble.Lib
     ( someFunc
     ) where
 

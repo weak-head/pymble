@@ -22,12 +22,12 @@ dependencies:
 - base >= 4.7 && < 5
 
 library:
-  source-dirs: src
+  source-dirs: src/
 
 executables:
-  pymble-exe:
-    main:                Main.hs
-    source-dirs:         app
+  pymble:
+    main: Main.hs
+    source-dirs: src/main
     ghc-options:
     - -threaded
     - -rtsopts
@@ -37,8 +37,8 @@ executables:
 
 tests:
   pymble-test:
-    main:                Spec.hs
-    source-dirs:         test
+    main: Test.hs
+    source-dirs: src/test
     ghc-options:
     - -threaded
     - -rtsopts

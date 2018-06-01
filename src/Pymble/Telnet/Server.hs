@@ -4,10 +4,13 @@ module Pymble.Telnet.Server (
   startServer
 ) where
 
-import Network.Socket as NS
+import Network.Socket             as NS
+import Control.Concurrent         as CC
+import Control.Monad              as CM
+import Control.Monad.IO.Class     as CMC
 import Control.Monad.Trans.Reader as TR
-import Control.Monad as CM
-import Control.Exception as E
+import Control.Exception          as E
+
 import Pymble.AppConfig
 
 
@@ -55,7 +58,6 @@ startServer conf = NS.withSocketsDo $ do
       putStrLn $ "The telnet server is running on " ++ show sockAddr
       return sock
 
-    -- creates ConnectionHandlerConfi
     mkConfig appConfig sock =
       ConnectionHandlerConfig {
           _ccSocket    = sock
@@ -68,7 +70,24 @@ startServer conf = NS.withSocketsDo $ do
 --
 handleClients :: ConnectionHandler
 handleClients = CM.forever $ do
-  undefined
+  config <- TR.ask
+
+  -- accept the connection from the next telnet client
+  (sock, sockAddr) <- CMC.liftIO $ NS.accept (_ccSocket config)
+
+  -- Using dedicated thread to handle the communication
+  -- with the client.
+  -- 
+  -- As of now we are not tracking ThreadId, but it could
+  -- be a good idea to keep track of the created threads
+  -- and the clients. Possibly using Control.ThreadPool. 
+  liftIO $ forkClient sock sockAddr
+
+
+-- | Forks a dedicated thread to process the connected client
+--
+forkClient :: NS.Socket -> NS.SockAddr -> IO CC.ThreadId
+forkClient = undefined
 
 
 -- | Given the port, gets address to bind

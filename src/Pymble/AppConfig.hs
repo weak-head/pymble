@@ -1,17 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Pymble.AppConfig (
-  AppConfig(..)
+    AppConfig(..)
+  , Port
 ) where
 
 import Data.Default
 
+type Port = Int
 
 -- | Application startup configuration
 --
 data AppConfig = AppConfig {
     _appDbConnectionInfo :: String
-  , _appServerPort       :: Int
+  , _appServerPort       :: Port
   } deriving (Show, Read, Eq)
 
 

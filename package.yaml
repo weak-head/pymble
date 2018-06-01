@@ -25,6 +25,8 @@ library:
   source-dirs: src/
   dependencies:
   - data-default
+  - network
+  - transformers
 
 executables:
   pymble:

@@ -11,8 +11,18 @@ import Control.Exception as E
 import Pymble.AppConfig
 
 
--- | A client connection handler
-type ConnectionHandler = TR.ReaderT AppConfig IO ()
+-- | The root telnet client handler 
+--
+type ConnectionHandler = TR.ReaderT ConnectionHandlerConfig IO ()
+
+
+-- | The configuration that is used by ConnectionHandler to
+-- establish and handle client connections
+--
+data ConnectionHandlerConfig = ConnectionHandlerConfig {
+    _ccSocket    :: NS.Socket
+  , _ccAppConfig :: AppConfig
+  } deriving (Eq, Show)
 
 
 -- | Given the startup configuration, creates
@@ -27,7 +37,7 @@ startServer conf = NS.withSocketsDo $ do
 
     E.bracket (open addrInfo) NS.close $ \sock -> do
       -- Accept and handle connections from the clients
-      TR.runReaderT handleClients conf
+      TR.runReaderT handleClients (mkConfig conf sock)
 
   where
     -- bind and open socket
@@ -45,9 +55,17 @@ startServer conf = NS.withSocketsDo $ do
       putStrLn $ "The telnet server is running on " ++ show sockAddr
       return sock
 
+    -- creates ConnectionHandlerConfi
+    mkConfig appConfig sock =
+      ConnectionHandlerConfig {
+          _ccSocket    = sock
+        , _ccAppConfig = appConfig
+        }
+
 
 -- | The main entry point to handle all the connections
 -- from the telnet clients.
+--
 handleClients :: ConnectionHandler
 handleClients = CM.forever $ do
   undefined
@@ -55,6 +73,7 @@ handleClients = CM.forever $ do
 
 -- | Given the port, gets address to bind
 -- a socket.
+--
 getAddress :: Port -> IO NS.AddrInfo
 getAddress port =
   let

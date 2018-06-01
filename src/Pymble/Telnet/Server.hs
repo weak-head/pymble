@@ -14,5 +14,6 @@ import Pymble.AppConfig
 -- returned untill the telnet service is terminated.
 --
 startServer :: AppConfig -> IO ()
-startServer = undefined
+startServer conf = do
+  print conf
 

@@ -1,6 +1,13 @@
 module Main (main) where
 
-import Pymble.Lib (someFunc)
+import Data.Default
 
+import Pymble.AppConfig
+import Pymble.Telnet.Server (startServer)
+
+-- | Application Main
+--
 main :: IO ()
-main = someFunc
+main = do
+  startServer def
+

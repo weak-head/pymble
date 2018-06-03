@@ -1,0 +1,23 @@
+language: c
+
+sudo: false
+
+cache:
+  directories:
+  - $HOME/.stack/
+
+env:
+- ARGS="--resolver lts-11.11 --stack-yaml stack.yaml"
+
+before_install:
+  - mkdir -p ~/.local/bin
+  - export PATH=~/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar -xzO --wildcards '*/stack' > ~/.local/bin/stack
+  - chmod a+x ~/.local/bin/stack
+
+install:
+  - stack -j2 $ARGS setup --no-terminal
+  - stack -j2 $ARGS build --only-snapshot --no-terminal
+
+script:
+  - stack -j2 $ARGS --no-terminal test --haddock --no-haddock-deps --bench

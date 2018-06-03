@@ -19,5 +19,5 @@ install:
   - stack -j2 $ARGS setup --no-terminal
   - stack -j2 $ARGS build --only-snapshot --no-terminal
 
-sript:
+script:
   - stack -j2 $ARGS --no-terminal test --haddock --no-haddock-deps --bench

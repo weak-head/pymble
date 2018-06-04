@@ -12,7 +12,7 @@ import Control.Monad.Trans.Reader as TR
 import Control.Exception          as E
 
 import Pymble.AppConfig
-
+----------------------------------------------------------------------
 
 -- | The root telnet client handler 
 --

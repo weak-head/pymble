@@ -1,10 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Pymble.Telnet.Server.ClientHandler (
+    Environment(..)
+  , Log
+  , ClientState(..)
+  , ClientHandler
+
+  -------------------
+  , handleClient
 
 ) where
 
+import Control.Monad (void)
+import Control.Monad.Loops (iterateWhile)
 import Control.Monad.Trans.RWS as MT
+
 ----------------------------------------------------------------------
 
 -- | Encapsulates all the necessary
@@ -17,16 +27,16 @@ data Environment = Environment {
 
 -- | The log of all interactions with a client.
 --
-data Log = Log {
-
-  } deriving (Eq, Show)
+-- Temporary using [String] to satisfy monoid laws
+--
+type Log = [String]
 
 
 -- | Reflects the state of the session
 -- and the connected client.
 --
 data ClientState = ClientState {
-
+    _csConnected :: Bool
   } deriving (Eq, Show)
 
 
@@ -39,4 +49,11 @@ type ClientHandler a = MT.RWST Environment Log ClientState IO a
 
 ----------------------------------------------------------------------
 
+
+-- | The main client processing loop.
+--
+handleClient :: ClientHandler ()
+handleClient = void $ iterateWhile _csConnected $ do
+  undefined
+  get
 

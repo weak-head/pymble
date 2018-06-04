@@ -27,6 +27,7 @@ library:
   - data-default
   - network
   - transformers
+  - monad-loops
 
 executables:
   pymble:

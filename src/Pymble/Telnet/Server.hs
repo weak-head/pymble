@@ -9,9 +9,11 @@ import Control.Concurrent         as CC
 import Control.Monad              as CM
 import Control.Monad.IO.Class     as CMC
 import Control.Monad.Trans.Reader as TR
+import Control.Monad.Trans.RWS    as MT
 import Control.Exception          as E
 
 import Pymble.AppConfig
+import Pymble.Telnet.Server.ClientHandler
 ----------------------------------------------------------------------
 
 -- | The root telnet client handler 
@@ -81,13 +83,35 @@ handleClients = CM.forever $ do
   -- As of now we are not tracking ThreadId, but it could
   -- be a good idea to keep track of the created threads
   -- and the clients. Possibly using Control.ThreadPool. 
-  liftIO $ forkClient sock sockAddr
+  liftIO $ forkClient sock sockAddr (_ccAppConfig config)
 
 
 -- | Forks a dedicated thread to process the connected client
 --
-forkClient :: NS.Socket -> NS.SockAddr -> IO CC.ThreadId
-forkClient = undefined
+forkClient :: NS.Socket -> NS.SockAddr -> AppConfig -> IO CC.ThreadId
+forkClient sock sockAddr appConfig =
+    forkIO $ do
+      (clientState, log) <- MT.execRWST handleClient
+                                (mkEnv appConfig)
+                                (mkState sock sockAddr)
+      -- Basically here we can save the generated log
+      -- and react on the resulting client state.
+      -- ATM handleClient has no actual value to return
+      -- but this could be changed in the future.
+      return ()
+
+  where
+    -- initializes environment
+    mkEnv conf = Environment {
+        _envDbConnectionInfo = _appDbConnectionInfo conf
+      }
+
+    -- initializes client state
+    mkState sock sockAddr = ClientState {
+        _csConnected  = True
+      , _csSocket     = sock
+      , _csSockAddr   = sockAddr
+      }
 
 
 -- | Given the port, gets address to bind

@@ -11,6 +11,7 @@ module Pymble.Telnet.Server.ClientHandler (
 
 ) where
 
+import Network.Socket as NS
 import Control.Monad (void)
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.Trans.RWS as MT
@@ -21,7 +22,7 @@ import Control.Monad.Trans.RWS as MT
 -- environment configuration and information.
 --
 data Environment = Environment {
-
+    _envDbConnectionInfo :: String
   } deriving (Eq, Show)
 
 
@@ -36,7 +37,9 @@ type Log = [String]
 -- and the connected client.
 --
 data ClientState = ClientState {
-    _csConnected :: Bool
+    _csSocket     :: NS.Socket
+  , _csSockAddr   :: NS.SockAddr
+  , _csConnected  :: Bool
   } deriving (Eq, Show)
 
 

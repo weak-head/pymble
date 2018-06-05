@@ -13,6 +13,7 @@ module Pymble.Telnet.Server.ClientHandler (
 
 import Network.Socket                     as NS
 import Control.Monad (void)
+import Control.Monad.Catch                as MC
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.Trans.RWS            as MT
@@ -63,10 +64,11 @@ serveClient :: ClientHandler ()
 serveClient = do
   writeLogStr "Connected"
 
-  handleClientRequests
-
-  get >>= liftIO . close . _csSocket
-  writeLogStr "Disconnected"
+  handleClientRequests `MC.finally` do
+    -- we want to make sure that the client socket
+    -- is being closed even if some unexpected exception happens
+    get >>= liftIO . close . _csSocket
+    writeLogStr "Disconnected"
 
 
 -- | The main client processing loop.
@@ -74,6 +76,10 @@ serveClient = do
 handleClientRequests :: ClientHandler ()
 handleClientRequests = void $ iterateWhile _csConnected $ do
   undefined
+
+  -- final ClientState is the result of our monad,
+  -- so iterateWhile can detect
+  -- when the client is disconnected
   get
 
 ----------------------------------------------------------------------

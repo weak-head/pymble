@@ -29,6 +29,7 @@ library:
   - transformers
   - monad-loops
   - time
+  - exceptions
 
 executables:
   pymble:

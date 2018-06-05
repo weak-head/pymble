@@ -91,7 +91,7 @@ handleClients = CM.forever $ do
 forkClient :: NS.Socket -> NS.SockAddr -> AppConfig -> IO CC.ThreadId
 forkClient sock sockAddr appConfig =
     forkIO $ do
-      (clientState, log) <- MT.execRWST handleClient
+      (clientState, log) <- MT.execRWST serveClient
                                 (mkEnv appConfig)
                                 (mkState sock sockAddr)
       -- Basically here we can save the generated log

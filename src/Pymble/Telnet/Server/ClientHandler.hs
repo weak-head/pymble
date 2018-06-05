@@ -7,14 +7,17 @@ module Pymble.Telnet.Server.ClientHandler (
   , ClientHandler
 
   -------------------
-  , handleClient
+  , serveClient
 
 ) where
 
-import Network.Socket as NS
+import Network.Socket                     as NS
 import Control.Monad (void)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (iterateWhile)
-import Control.Monad.Trans.RWS as MT
+import Control.Monad.Trans.RWS            as MT
+import Data.List (intercalate)
+import Data.Time.Clock (getCurrentTime)
 
 ----------------------------------------------------------------------
 
@@ -53,10 +56,45 @@ type ClientHandler a = MT.RWST Environment Log ClientState IO a
 ----------------------------------------------------------------------
 
 
+-- | The main routine to handle clients
+-- connected via telnet.
+--
+serveClient :: ClientHandler ()
+serveClient = do
+  writeLogStr "Connected"
+
+  handleClientRequests
+
+  get >>= liftIO . close . _csSocket
+  writeLogStr "Disconnected"
+
+
 -- | The main client processing loop.
 --
-handleClient :: ClientHandler ()
-handleClient = void $ iterateWhile _csConnected $ do
+handleClientRequests :: ClientHandler ()
+handleClientRequests = void $ iterateWhile _csConnected $ do
   undefined
   get
 
+----------------------------------------------------------------------
+
+writeLogStr :: String -> ClientHandler ()
+writeLogStr message = do
+  now  <- show <$> liftIO getCurrentTime
+  addr <- show . _csSockAddr <$> get
+
+  -- idealy we dont want to use [String] for the log
+  -- and we want to replace it with some appropriate
+  -- implementation, but for now we work with slow
+  -- linked list and ugly strings.
+  let logEntry = intercalate " | "
+                  [ now
+                  , addr
+                  , message
+                  ]
+
+  liftIO $ putStrLn logEntry
+
+  -- this forces us to append to the end of linked list
+  -- every single time... extremely unefficient.
+  tell [logEntry]

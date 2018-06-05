@@ -28,6 +28,7 @@ library:
   - network
   - transformers
   - monad-loops
+  - time
 
 executables:
   pymble:

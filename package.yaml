@@ -30,6 +30,8 @@ library:
   - monad-loops
   - time
   - exceptions
+  - JuicyPixels
+  - http-conduit
 
 executables:
   pymble:

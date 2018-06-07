@@ -3,8 +3,13 @@
 
 module Pymble.Image.Convert
     (
+    -- * ASCII conversion
+      ColoredChar
+    , RGBA8
+    , toDelayedAsciiArray
+    , toUnboxedAsciiArray
     -- * Repa conversion
-      toArray
+    , toArray
     , fromArray
     -- * Format normalization 
     , normalize
@@ -15,7 +20,6 @@ import Codec.Picture       as P
 import Codec.Picture.Types as PT
 import Data.Array.Repa     as R
 import Data.Array.Repa ((:.), (!))
-
 ----------------------------------------------------------------------
 
 -- | Classical pixel reprsentation (8bit red, green, blue and alpha)
@@ -27,8 +31,37 @@ import Data.Array.Repa ((:.), (!))
 type RGBA8 = (P.Pixel8, P.Pixel8, P.Pixel8, P.Pixel8)
 
 
--- | Converts generic image of undefined format
--- to the RGBA8 image with the classical
+-- |
+--
+type ColoredChar = (Char, RGBA8) 
+
+
+-- |
+--
+toDelayedAsciiArray :: Int -> Int -> P.Image P.PixelRGBA8 -> R.Array R.D R.DIM2 ColoredChar
+toDelayedAsciiArray width height img =
+  R.traverse (toArray img)
+    -- the shape of the resulting array
+    (\_ -> R.Z :. width :. height)
+
+    -- Finds the color and the appropriate char to be used
+    -- to represend the dedicated sub-area of the image
+    (\lookup (R.Z :. w :. h) ->
+      let
+          (r, g, b, a) = lookup (Z :. w :. h)
+      in
+          (undefined, undefined)
+      )
+
+
+-- |
+--
+toUnboxedAsciiArray :: Int -> Int -> P.Image P.PixelRGBA8 -> IO (R.Array R.U R.DIM2 ColoredChar)
+toUnboxedAsciiArray width height img = R.computeP $ toDelayedAsciiArray width height img
+
+
+-- | Converts a generic image of a loosely defined format
+-- to the 'P.PixelRGBA8' image with the classical
 -- pixels (8bit red, green, blue and alpha).
 --
 normalize :: P.DynamicImage -> Maybe (P.Image P.PixelRGBA8)
@@ -43,8 +76,10 @@ normalize dynamicImage =
     _               -> Nothing
 
 
--- | Converts RBGA8 'P.Image' to the 'R.Array' of 'RGBA8' pixels
--- that could be processed in parallel using repa.
+-- | Converts the 'P.PixelRBGA8' 'P.Image' to the
+-- repa 'R.Array' of 'RGBA8' pixels
+-- that could be processed in parallel.
+--
 -- This operation is opposite and symmetrical to 'fromArray'.
 --
 toArray :: P.Image P.PixelRGBA8 -> R.Array R.D R.DIM2 RGBA8
@@ -55,8 +90,9 @@ toArray img@Image {..} =
       in (r, g, b, a))
 
 
--- | Converts an 'R.Array' of 'RGBA8' pixels to 
--- RGBA8 'P.Image' with classical pixels.
+-- | Converts an 'R.Array' of 'RGBA8' pixels to the 
+-- 'P.Image' with 'P.PixelRGBA8' pixels.
+--
 -- This operation is opposite and symmetrical to 'toArray'.
 --
 fromArray :: R.Array R.U R.DIM2 RGBA8 -> P.Image P.PixelRGBA8

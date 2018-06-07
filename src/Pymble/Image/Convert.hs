@@ -1,39 +1,34 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Pymble.Image (
-    download
-  , normalize
-
-) where
+module Pymble.Image.Convert
+    (
+    -- * Repa conversion
+      toArray
+    , fromArray
+    -- * Format normalization 
+    , normalize
+    
+    ) where
 
 import Codec.Picture       as P
 import Codec.Picture.Types as PT
 import Data.Array.Repa     as R
 import Data.Array.Repa ((:.), (!))
-import Network.HTTP.Simple as NW
 
 ----------------------------------------------------------------------
 
+-- | Classical pixel reprsentation (8bit red, green, blue and alpha)
+-- in form of tuple.
+--
+-- This pixel representation is used when an 'P.Image' is converted
+-- into 'R.Array' for further parallel processing.
+--
 type RGBA8 = (P.Pixel8, P.Pixel8, P.Pixel8, P.Pixel8)
 
 
--- | Downloads the image with the specified URI
--- and converts it to 'P.DynamicImage'.
---
-download :: String -> IO P.DynamicImage
-download uri = do
-  request <- NW.parseRequest uri
-  response <- NW.httpBS request 
-  
-  let statusCode  = NW.getResponseStatusCode response
-      contentType = NW.getResponseHeader "Content-Type" response
-      body        = NW.getResponseBody response
-  
-  either error return $ decodeImage body
-
-
--- | Converts generic image to image with the classical
+-- | Converts generic image of undefined format
+-- to the RGBA8 image with the classical
 -- pixels (8bit red, green, blue and alpha).
 --
 normalize :: P.DynamicImage -> Maybe (P.Image P.PixelRGBA8)
@@ -48,7 +43,9 @@ normalize dynamicImage =
     _               -> Nothing
 
 
--- | Converts 'P.Image' to repa 'R.Array' for further processing.
+-- | Converts RBGA8 'P.Image' to the 'R.Array' of 'RGBA8' pixels
+-- that could be processed in parallel using repa.
+-- This operation is opposite and symmetrical to 'fromArray'.
 --
 toArray :: P.Image P.PixelRGBA8 -> R.Array R.D R.DIM2 RGBA8
 toArray img@Image {..} =
@@ -58,7 +55,9 @@ toArray img@Image {..} =
       in (r, g, b, a))
 
 
--- | Converts repa 'R.Array' to resulting 'P.Image'.
+-- | Converts an 'R.Array' of 'RGBA8' pixels to 
+-- RGBA8 'P.Image' with classical pixels.
+-- This operation is opposite and symmetrical to 'toArray'.
 --
 fromArray :: R.Array R.U R.DIM2 RGBA8 -> P.Image P.PixelRGBA8
 fromArray array =

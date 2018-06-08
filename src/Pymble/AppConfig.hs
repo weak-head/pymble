@@ -1,15 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pymble.AppConfig (
-    AppConfig(..)
-  , Port
-) where
+module Pymble.AppConfig
+    (
+      AppConfig(..)
+    , Port
+    ) where
 
 import Data.Default
+----------------------------------------------------------------------
 
+-- | TCP port.
+-- 
 type Port = Int
 
--- | Application startup configuration
+-- | The complete application configuration.
 --
 data AppConfig = AppConfig {
     _appDbConnectionInfo :: String
@@ -17,6 +21,9 @@ data AppConfig = AppConfig {
   } deriving (Show, Read, Eq)
 
 
+-- | In case if we dont care, the default application configuration
+-- could be used. 
+--
 instance Default AppConfig where
   def = AppConfig {
         _appDbConnectionInfo = "pymble.db"

@@ -1,6 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
-
+-- |
+--
+-- This is the main module for image processing and conversion.
+--
+-- The module exposes normalization of dymamic images into classical 8-bit RGBA images,
+-- provides access to conversions between an image and repa array and the most
+-- important it allows converting images to colored ASCII art.
+-- 
 module Pymble.Image.Convert
     (
     -- * Common types
@@ -10,12 +17,12 @@ module Pymble.Image.Convert
     -- * ASCII conversion
     , ColoredChar
     , RGBA8
-    , toDelayedAsciiArray
-    , toUnboxedAsciiArray
+    , toDelayedAsciiArt
+    , toUnboxedAsciiArt
     -- * Repa conversion
     , toArray
     , fromArray
-    -- * Format normalization 
+    -- * Image normalization 
     , normalize
     
     ) where
@@ -27,39 +34,54 @@ import Data.Array.Repa ((:.), (!))
 ----------------------------------------------------------------------
 
 
--- |
+-- | Classical 8-bit RGBA image.
+--
+-- Each pixel has four 8-bit channels: red, green, blue and alpha.
 --
 type RGBAImage = P.Image P.PixelRGBA8
 
 
--- |
+-- | The delayed two-dimentional array of arbitrary value.
+-- In the delayed array values are represented as
+-- functions to element values.
+--
+-- Delayed arrays should be explicitly evaluated
+-- in order to produce the actual value.
 --
 type DelayedArray a = R.Array R.D R.DIM2 a
 
 
--- |
+-- | Fully evaluated and unboxed array.
 --
 type UnboxedArray a = R.Array R.U R.DIM2 a
 
 
--- | Classical pixel reprsentation (8bit red, green, blue and alpha)
--- in form of tuple.
+-- | Classical 8-bit RGBA pixel in form of tuple.
 --
--- This pixel representation is used when an 'P.Image' is converted
--- into 'R.Array' for further parallel processing.
+-- This pixel representation is used when an 'RGBAImage' is converted
+-- into 'DelayedArray' for further parallel processing. Another use-case
+-- is representation of the character color.
 --
 type RGBA8 = (P.Pixel8, P.Pixel8, P.Pixel8, P.Pixel8)
 
 
--- |
+-- | This tuple basically represents a char
+-- that should be rendered with the specified
+-- color.
 --
 type ColoredChar = (Char, RGBA8) 
 
 
--- |
+-- | Given the image and the specification,
+-- converts the image to a colored ASCII art.
+-- The ASCII art is represented as 'DelayedArray' of 'ColoredChar'
+-- and, as a result, is not fully evaluated.
 --
-toDelayedAsciiArray :: Int -> Int -> RGBAImage -> DelayedArray ColoredChar
-toDelayedAsciiArray width height img =
+toDelayedAsciiArt :: Int                      -- ^ ASCII art width (in characters)
+                  -> Int                      -- ^ ASCII art height (in characters)
+                  -> RGBAImage                -- ^ the image to convert to ASCII art
+                  -> DelayedArray ColoredChar -- ^ ASCII art represented as 'DelayedArray'
+toDelayedAsciiArt width height img =
   R.traverse (toArray img)
     -- the shape of the resulting array
     (\_ -> R.Z :. width :. height)
@@ -74,15 +96,20 @@ toDelayedAsciiArray width height img =
       )
 
 
--- |
+-- | From ASCII art poing of view this is basically the same as 'toDelayedAsciiArt',
+-- with the only difference is that the 'toUnboxedAsciiArt' produces a side effect of fully evaluating
+-- and unboxing the 'DelayedArray' into 'UnboxedArray' using the parallel computation.
 --
-toUnboxedAsciiArray :: Int -> Int -> RGBAImage -> IO (UnboxedArray ColoredChar)
-toUnboxedAsciiArray width height img = R.computeP $ toDelayedAsciiArray width height img
+toUnboxedAsciiArt :: Int                            -- ^ ASCII art width (in characters)
+                  -> Int                            -- ^ ASCII art height (in characters)
+                  -> RGBAImage                      -- ^ the image to convert to ASCII art
+                  -> IO (UnboxedArray ColoredChar)  -- ^ fully evaluated ASCII art
+toUnboxedAsciiArt width height img = R.computeP $ toDelayedAsciiArt width height img
 
 
--- | Converts a generic image of a loosely defined format
--- to the 'P.PixelRGBA8' image with the classical
--- pixels (8bit red, green, blue and alpha).
+-- | Converts an image of a loosely defined format to the 'RGBAImage'
+-- that has a classical 8-bit pixel representation and could be
+-- further processed by other functions in this module.
 --
 normalize :: P.DynamicImage -> Maybe RGBAImage
 normalize dynamicImage =
@@ -96,9 +123,10 @@ normalize dynamicImage =
     _               -> Nothing
 
 
--- | Converts the 'P.PixelRBGA8' 'P.Image' to the
--- repa 'R.Array' of 'RGBA8' pixels
--- that could be processed in parallel.
+-- | Converts the classical 8-bit 'RGBAImage' to the
+-- 'DelayedArray' representation that is used to efficiently
+-- process the image by taking advantage of the 
+-- parallel computation and repa library.
 --
 -- This operation is opposite and symmetrical to 'fromArray'.
 --
@@ -110,8 +138,8 @@ toArray img@Image {..} =
       in (r, g, b, a))
 
 
--- | Converts an 'R.Array' of 'RGBA8' pixels to the 
--- 'P.Image' with 'P.PixelRGBA8' pixels.
+-- | Backward conversion of the 'UnboxedArray' into classical
+-- 8-bit 'RGBAImage'.
 --
 -- This operation is opposite and symmetrical to 'toArray'.
 --

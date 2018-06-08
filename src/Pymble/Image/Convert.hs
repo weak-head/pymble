@@ -3,8 +3,12 @@
 
 module Pymble.Image.Convert
     (
+    -- * Common types
+      RGBAImage
+    , DelayedArray
+    , UnboxedArray
     -- * ASCII conversion
-      ColoredChar
+    , ColoredChar
     , RGBA8
     , toDelayedAsciiArray
     , toUnboxedAsciiArray
@@ -22,6 +26,22 @@ import Data.Array.Repa     as R
 import Data.Array.Repa ((:.), (!))
 ----------------------------------------------------------------------
 
+
+-- |
+--
+type RGBAImage = P.Image P.PixelRGBA8
+
+
+-- |
+--
+type DelayedArray a = R.Array R.D R.DIM2 a
+
+
+-- |
+--
+type UnboxedArray a = R.Array R.U R.DIM2 a
+
+
 -- | Classical pixel reprsentation (8bit red, green, blue and alpha)
 -- in form of tuple.
 --
@@ -38,7 +58,7 @@ type ColoredChar = (Char, RGBA8)
 
 -- |
 --
-toDelayedAsciiArray :: Int -> Int -> P.Image P.PixelRGBA8 -> R.Array R.D R.DIM2 ColoredChar
+toDelayedAsciiArray :: Int -> Int -> RGBAImage -> DelayedArray ColoredChar
 toDelayedAsciiArray width height img =
   R.traverse (toArray img)
     -- the shape of the resulting array
@@ -56,7 +76,7 @@ toDelayedAsciiArray width height img =
 
 -- |
 --
-toUnboxedAsciiArray :: Int -> Int -> P.Image P.PixelRGBA8 -> IO (R.Array R.U R.DIM2 ColoredChar)
+toUnboxedAsciiArray :: Int -> Int -> RGBAImage -> IO (UnboxedArray ColoredChar)
 toUnboxedAsciiArray width height img = R.computeP $ toDelayedAsciiArray width height img
 
 
@@ -64,7 +84,7 @@ toUnboxedAsciiArray width height img = R.computeP $ toDelayedAsciiArray width he
 -- to the 'P.PixelRGBA8' image with the classical
 -- pixels (8bit red, green, blue and alpha).
 --
-normalize :: P.DynamicImage -> Maybe (P.Image P.PixelRGBA8)
+normalize :: P.DynamicImage -> Maybe RGBAImage
 normalize dynamicImage =
   case dynamicImage of
     P.ImageY8     i -> Just $ PT.promoteImage i
@@ -82,7 +102,7 @@ normalize dynamicImage =
 --
 -- This operation is opposite and symmetrical to 'fromArray'.
 --
-toArray :: P.Image P.PixelRGBA8 -> R.Array R.D R.DIM2 RGBA8
+toArray :: RGBAImage -> DelayedArray RGBA8
 toArray img@Image {..} =
   R.fromFunction (R.Z :. imageWidth :. imageHeight)
     (\(R.Z :. x :. y) ->
@@ -95,7 +115,7 @@ toArray img@Image {..} =
 --
 -- This operation is opposite and symmetrical to 'toArray'.
 --
-fromArray :: R.Array R.U R.DIM2 RGBA8 -> P.Image P.PixelRGBA8
+fromArray :: UnboxedArray RGBA8 -> RGBAImage
 fromArray array =
     P.generateImage mkPixel width height
   where

@@ -17,6 +17,8 @@ module Pymble.Image.Convert
     -- * ASCII conversion
     , ColoredChar
     , RGBA8
+    , Brightness,
+    , BrightnessMap
     , toDelayedAsciiArt
     , toUnboxedAsciiArt
     -- * Repa conversion
@@ -27,10 +29,12 @@ module Pymble.Image.Convert
     
     ) where
 
-import Codec.Picture       as P
-import Codec.Picture.Types as PT
-import Data.Array.Repa     as R
-import Data.Array.Repa ((:.), (!))
+import           Codec.Picture       as P
+import           Codec.Picture.Types as PT
+import           Data.Array.Repa     as R
+import           Data.Array.Repa ((:.), (!))
+import qualified Data.Map.Lazy       as ML
+import           Data.Word
 ----------------------------------------------------------------------
 
 
@@ -72,6 +76,22 @@ type RGBA8 = (P.Pixel8, P.Pixel8, P.Pixel8, P.Pixel8)
 type ColoredChar = (Char, RGBA8) 
 
 
+-- | The average brightness of a dedicated area of an image or
+-- a total average brightness of a specific character.
+--
+type Brightness = Word8
+
+
+-- | The brightness map is used during the image
+-- conversion to ASCII art. Every character has a relative
+-- brightness that could be used to substitute a dedicated
+-- area of an image. The brightness map defines a dictionary
+-- that is used during the substitution. Different dictionaries
+-- produce different image conversion result.
+--
+type BrightnessMap = ML.Map Brightness Char 
+
+
 -- | Given the image and the specification,
 -- converts the image to a colored ASCII art.
 -- The ASCII art is represented as 'DelayedArray' of 'ColoredChar'
@@ -79,9 +99,10 @@ type ColoredChar = (Char, RGBA8)
 --
 toDelayedAsciiArt :: Int                      -- ^ ASCII art width (in characters)
                   -> Int                      -- ^ ASCII art height (in characters)
+                  -> BrightnessMap            -- ^ character brighness map
                   -> RGBAImage                -- ^ the image to convert to ASCII art
                   -> DelayedArray ColoredChar -- ^ ASCII art represented as 'DelayedArray'
-toDelayedAsciiArt width height img =
+toDelayedAsciiArt width height bmap img =
   R.traverse (toArray img)
     -- the shape of the resulting array
     (\_ -> R.Z :. width :. height)
@@ -90,7 +111,7 @@ toDelayedAsciiArt width height img =
     -- to represend the dedicated sub-area of the image
     (\lookup (R.Z :. w :. h) ->
       let
-          (r, g, b, a) = lookup (Z :. w :. h)
+          (r, g, b, a) = lookup (R.Z :. w :. h)
       in
           (undefined, undefined)
       )
@@ -102,9 +123,10 @@ toDelayedAsciiArt width height img =
 --
 toUnboxedAsciiArt :: Int                            -- ^ ASCII art width (in characters)
                   -> Int                            -- ^ ASCII art height (in characters)
+                  -> BrightnessMap                  -- ^ character brightness map
                   -> RGBAImage                      -- ^ the image to convert to ASCII art
                   -> IO (UnboxedArray ColoredChar)  -- ^ fully evaluated ASCII art
-toUnboxedAsciiArt width height img = R.computeP $ toDelayedAsciiArt width height img
+toUnboxedAsciiArt width height bmap img = R.computeP $ toDelayedAsciiArt width height bmap img
 
 
 -- | Converts an image of a loosely defined format to the 'RGBAImage'
@@ -151,6 +173,6 @@ fromArray array =
     R.Z :. width :. height = R.extent array
     -- given the array coordinates creates corresponding image pixel
     mkPixel x y =
-      let (r, g, b, a) = array ! (Z :. x :. y)
+      let (r, g, b, a) = array ! (R.Z :. x :. y)
       in P.PixelRGBA8 r g b a
       

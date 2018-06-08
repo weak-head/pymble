@@ -33,6 +33,7 @@ library:
   - JuicyPixels
   - http-conduit
   - repa
+  - containers
 
 executables:
   pymble:

@@ -17,7 +17,7 @@ module Pymble.Image.Convert
     -- * ASCII conversion
     , ColoredChar
     , RGBA8
-    , Brightness,
+    , Brightness
     , BrightnessMap
     , toDelayedAsciiArt
     , toUnboxedAsciiArt
@@ -31,10 +31,10 @@ module Pymble.Image.Convert
 
 import           Codec.Picture       as P
 import           Codec.Picture.Types as PT
-import           Data.Array.Repa     as R
-import           Data.Array.Repa ((:.), (!))
+import           Data.Array.Repa     as R   hiding (map)
 import qualified Data.Map.Lazy       as ML
 import           Data.Word
+import           Data.List (foldl')
 ----------------------------------------------------------------------
 
 
@@ -103,18 +103,65 @@ toDelayedAsciiArt :: Int                      -- ^ ASCII art width (in character
                   -> RGBAImage                -- ^ the image to convert to ASCII art
                   -> DelayedArray ColoredChar -- ^ ASCII art represented as 'DelayedArray'
 toDelayedAsciiArt width height bmap img =
-  R.traverse (toArray img)
-    -- the shape of the resulting array
-    (\_ -> R.Z :. width :. height)
+  let
+    arr               = toArray img
+    Z :. arrW :. arrH = R.extent arr
+    -- it pretty common to have width to heigh ratio
+    -- around 0.4 ~ 0.55, but this is very font
+    -- specific, so it's up to the caller to figure that out
+    -- and provide the width and the height of
+    -- the resulting ASCII art that make sence.
+    -- We are just following the spec here.
+    charAreaWidth  = arrW `div` width
+    charAreaHeight = arrH `div` height
+  in
+    R.traverse arr
+      -- the shape of the ASCII art
+      (\_ -> Z :. width :. height)
 
-    -- Finds the color and the appropriate char to be used
-    -- to represend the dedicated sub-area of the image
-    (\lookup (R.Z :. w :. h) ->
+      -- Finds the color and the appropriate char to be used
+      -- to represend the dedicated sub-area of the image
+      (\lookup (Z :. w :. h) ->
+        let
+            coords = coordinates charAreaWidth charAreaHeight w h
+            rgbas  = map (\(x, y) -> lookup (Z :. x :. y)) coords
+            color  = charColor rgbas
+            char   = bestChar rgbas
+        in
+            (char, color)
+        )
+  where
+    -- the complete set of coordinates of the image area
+    -- that is being covered by the character with position (chX, chY)
+    coordinates areaW areaH chX chY =
+      [(x, y) | x <- [(chX * areaW) .. (chX * areaW + areaW)]
+              , y <- [(chY * areaH) .. (chY * areaH + areaH)]]
+
+    -- the color that fits the area of the image that would be replaced
+    -- with a char
+    charColor :: [RGBA8] -> RGBA8
+    charColor = unwrapColor .
+      foldl' (\((r, g, b, a), n) (nr, ng, nb, na) ->
+                let
+                  r' = r `seq` (r + fromIntegral nr)
+                  g' = g `seq` (g + fromIntegral ng)
+                  b' = b `seq` (b + fromIntegral nb)
+                  n' = n `seq` (n + 1)
+                in
+                  ((r', g', b', 255), n'))
+             ((0, 0, 0, 255), 0)
+
+    unwrapColor :: ((Integer, Integer, Integer, Integer), Integer) -> RGBA8
+    unwrapColor ((r, g, b, a), n) =
       let
-          (r, g, b, a) = lookup (R.Z :. w :. h)
-      in
-          (undefined, undefined)
-      )
+          r' = fromIntegral $ r `div` n
+          g' = fromIntegral $ g `div` n
+          b' = fromIntegral $ b `div` n
+      in (r', g', b', fromIntegral a)
+                  
+    -- gets the char that fits the area
+    bestChar rgbas =
+      undefined
 
 
 -- | From ASCII art poing of view this is basically the same as 'toDelayedAsciiArt',
@@ -154,8 +201,8 @@ normalize dynamicImage =
 --
 toArray :: RGBAImage -> DelayedArray RGBA8
 toArray img@Image {..} =
-  R.fromFunction (R.Z :. imageWidth :. imageHeight)
-    (\(R.Z :. x :. y) ->
+  R.fromFunction (Z :. imageWidth :. imageHeight)
+    (\(Z :. x :. y) ->
       let (P.PixelRGBA8 r g b a) = P.pixelAt img x y
       in (r, g, b, a))
 
@@ -170,9 +217,9 @@ fromArray array =
     P.generateImage mkPixel width height
   where
     -- image size
-    R.Z :. width :. height = R.extent array
+    Z :. width :. height = R.extent array
     -- given the array coordinates creates corresponding image pixel
     mkPixel x y =
-      let (r, g, b, a) = array ! (R.Z :. x :. y)
+      let (r, g, b, a) = array ! (Z :. x :. y)
       in P.PixelRGBA8 r g b a
       

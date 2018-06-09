@@ -4,7 +4,7 @@
 --
 -- This is the main module for image processing and conversion.
 --
--- The module exposes normalization of dymamic images into classical 8-bit RGBA images,
+-- The module exposes normalization of dynamic images into classical 8-bit RGBA images,
 -- provides access to conversions between an image and repa array and the most
 -- important it allows converting images to colored ASCII art.
 -- 
@@ -26,6 +26,7 @@ module Pymble.Image.Convert
     , fromArray
     -- * Image normalization 
     , normalize
+    , unifyColor
     
     ) where
 
@@ -45,7 +46,7 @@ import           Data.List (foldl')
 type RGBAImage = P.Image P.PixelRGBA8
 
 
--- | The delayed two-dimentional array of arbitrary value.
+-- | The delayed two-dimensional array of arbitrary value.
 -- In the delayed array values are represented as
 -- functions to element values.
 --
@@ -99,72 +100,68 @@ type BrightnessMap = ML.Map Brightness Char
 --
 toDelayedAsciiArt :: Int                      -- ^ ASCII art width (in characters)
                   -> Int                      -- ^ ASCII art height (in characters)
-                  -> BrightnessMap            -- ^ character brighness map
+                  -> BrightnessMap            -- ^ character brightness map
                   -> RGBAImage                -- ^ the image to convert to ASCII art
                   -> DelayedArray ColoredChar -- ^ ASCII art represented as 'DelayedArray'
 toDelayedAsciiArt width height bmap img =
-  let
-    arr               = toArray img
-    Z :. arrW :. arrH = R.extent arr
-    -- it pretty common to have width to heigh ratio
-    -- around 0.4 ~ 0.55, but this is very font
-    -- specific, so it's up to the caller to figure that out
-    -- and provide the width and the height of
-    -- the resulting ASCII art that make sence.
-    -- We are just following the spec here.
-    charAreaWidth  = arrW `div` width
-    charAreaHeight = arrH `div` height
-  in
-    R.traverse arr
+  let arr               = toArray img
+      Z :. arrW :. arrH = R.extent arr
+      -- it pretty common to have width to heigh ratio
+      -- around 0.4 ~ 0.55, but this is very font
+      -- specific, so it's up to the caller to figure that out
+      -- and provide the width and the height of
+      -- the resulting ASCII art that make sense.
+      -- We are just following the spec here.
+      charAreaWidth  = arrW `div` width
+      charAreaHeight = arrH `div` height
+  in R.traverse arr
       -- the shape of the ASCII art
       (\_ -> Z :. width :. height)
 
       -- Finds the color and the appropriate char to be used
-      -- to represend the dedicated sub-area of the image
+      -- to represent the dedicated sub-area of the image
       (\lookup (Z :. w :. h) ->
-        let
-            coords = coordinates charAreaWidth charAreaHeight w h
+        let coords = coordinates charAreaWidth charAreaHeight w h
             rgbas  = map (\(x, y) -> lookup (Z :. x :. y)) coords
-            color  = charColor rgbas
-            char   = bestChar rgbas
-        in
-            (char, color)
-        )
+        in (bestChar rgbas, unifyColor rgbas))
   where
     -- the complete set of coordinates of the image area
     -- that is being covered by the character with position (chX, chY)
     coordinates areaW areaH chX chY =
       [(x, y) | x <- [(chX * areaW) .. (chX * areaW + areaW)]
               , y <- [(chY * areaH) .. (chY * areaH + areaH)]]
-
-    -- the color that fits the area of the image that would be replaced
-    -- with a char
-    charColor :: [RGBA8] -> RGBA8
-    charColor = unwrapColor .
-      foldl' (\((r, g, b, a), n) (nr, ng, nb, na) ->
-                let
-                  r' = r `seq` (r + fromIntegral nr)
-                  g' = g `seq` (g + fromIntegral ng)
-                  b' = b `seq` (b + fromIntegral nb)
-                  n' = n `seq` (n + 1)
-                in
-                  ((r', g', b', 255), n'))
-             ((0, 0, 0, 255), 0)
-
-    unwrapColor :: ((Integer, Integer, Integer, Integer), Integer) -> RGBA8
-    unwrapColor ((r, g, b, a), n) =
-      let
-          r' = fromIntegral $ r `div` n
-          g' = fromIntegral $ g `div` n
-          b' = fromIntegral $ b `div` n
-      in (r', g', b', fromIntegral a)
                   
     -- gets the char that fits the area
     bestChar rgbas =
       undefined
 
 
--- | From ASCII art poing of view this is basically the same as 'toDelayedAsciiArt',
+-- | Given a list of 'RGBA8' colors unifies them
+-- into single average 'RGBA8' color. Alpha is not
+-- affected by the unification and always remains full opaque.
+--
+unifyColor :: [RGBA8] -> RGBA8
+unifyColor = 
+    unwrapColor . foldl' accumulateColor ((0, 0, 0, 0), 0)
+  where
+    -- accumulates colors, preserving the number of colors accumulated
+    accumulateColor ((nr, ng, nb, na), n) (r, g, b, _) =
+      let r' = nr `seq` (nr + fromIntegral r)
+          g' = ng `seq` (ng + fromIntegral g)
+          b' = nb `seq` (nb + fromIntegral b)
+          n' = n `seq` (n + 1)
+      in ((r', g', b', 255), n')
+
+    -- unwraps the accumulated colors into single average RGBA8 color
+    unwrapColor ((r, g, b, a), n) =
+      let r' = fromIntegral $ r `div` n
+          g' = fromIntegral $ g `div` n
+          b' = fromIntegral $ b `div` n
+          a' = fromIntegral $ a
+      in (r', g', b', a')
+
+
+-- | From ASCII art point of view this is basically the same as 'toDelayedAsciiArt',
 -- with the only difference is that the 'toUnboxedAsciiArt' produces a side effect of fully evaluating
 -- and unboxing the 'DelayedArray' into 'UnboxedArray' using the parallel computation.
 --

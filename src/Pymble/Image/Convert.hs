@@ -27,7 +27,7 @@ module Pymble.Image.Convert
     -- * Image normalization 
     , normalize
     , unifyColor
-    
+    , averageBrightness
     ) where
 
 import           Codec.Picture       as P
@@ -123,7 +123,7 @@ toDelayedAsciiArt width height bmap img =
       (\lookup (Z :. w :. h) ->
         let coords = coordinates charAreaWidth charAreaHeight w h
             rgbas  = map (\(x, y) -> lookup (Z :. x :. y)) coords
-        in (bestChar rgbas, unifyColor rgbas))
+        in (bestChar $ averageBrightness rgbas, unifyColor rgbas))
   where
     -- the complete set of coordinates of the image area
     -- that is being covered by the character with position (chX, chY)
@@ -160,6 +160,28 @@ unifyColor =
           b' = fromIntegral $ b `div` n
           a' = fromIntegral $ a
       in (r', g', b', a')
+
+
+-- | Given a list of 'RGBA8' colors evaluates the
+-- average brightness of the area formed by the pixels.
+-- Alpha is not included into the computation and doesn't
+-- affect the resulting brightness.
+--
+averageBrightness :: [RGBA8] -> Brightness
+averageBrightness =
+    unwrapBrightness . foldl' accumulateBrightness (0, 0)
+  where
+    -- accumulates average brightness, preserving the number
+    -- accumulated items
+    accumulateBrightness (nu, n) (r, g, b, a) =
+      let rgb = (fromIntegral r + fromIntegral g + fromIntegral b) :: Integer
+          nu' = nu `seq` (nu + (rgb `div` 3))
+          n'  = n  `seq` (n + 1)
+      in (nu', n')
+
+    -- unwraps the accumulated total brightness and computes the average
+    unwrapBrightness (nu, n) | n == 0 = 0
+    unwrapBrightness (nu, n) = fromIntegral $ nu `div` n
 
 
 -- | From ASCII art point of view this is basically the same as 'toDelayedAsciiArt',

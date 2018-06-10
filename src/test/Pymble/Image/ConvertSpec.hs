@@ -10,7 +10,7 @@ main :: IO ()
 main = hspec spec
 
 spec :: Spec
-spec =
+spec = do
 
   describe "unifyColor" $ do
     it "empty list" $ do
@@ -27,4 +27,20 @@ spec =
                    , (125, 125, 125, 125)
                    , (200, 200, 200, 200)
                    , (75,  75,  75,  75 )] `shouldBe` (125, 125, 125, 255)
+
+  describe "averageBrightness" $ do
+    it "empty list" $ do
+        averageBrightness [] `shouldBe` 0
+
+    it "single item" $ do
+        averageBrightness [(100, 150, 200, 125)] `shouldBe` 150
+
+    it "ignores alpha" $ do
+        averageBrightness [(255, 255, 255, 0)] `shouldBe` 255
+
+    it "computes average" $ do
+        averageBrightness [ (100, 150, 200, 200)
+                          , (50,  75,  100, 200)
+                          , (75,  75,  75,  75)
+                          , (75,  100, 125, 200)] `shouldBe` 100
 

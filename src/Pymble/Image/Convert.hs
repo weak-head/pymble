@@ -124,7 +124,7 @@ toDelayedAsciiArt width height bmap img =
       (\lookup (Z :. w :. h) ->
         let coords = coordinates charAreaWidth charAreaHeight w h
             rgbas  = map (\(x, y) -> lookup (Z :. x :. y)) coords
-        in (bestFit $ averageBrightness rgbas, unifyColor rgbas))
+        in (bestFit bmap $ averageBrightness rgbas, unifyColor rgbas))
   where
     -- the complete set of coordinates of the image area
     -- that is being covered by the character with position (chX, chY)

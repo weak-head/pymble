@@ -153,6 +153,7 @@ unifyColor =
       in ((r', g', b', 255), n')
 
     -- unwraps the accumulated colors into single average RGBA8 color
+    unwrapColor ((r, g, b, a), n) | n == 0 = (0, 0, 0, 0)
     unwrapColor ((r, g, b, a), n) =
       let r' = fromIntegral $ r `div` n
           g' = fromIntegral $ g `div` n

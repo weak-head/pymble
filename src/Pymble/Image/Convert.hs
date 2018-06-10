@@ -21,10 +21,11 @@ module Pymble.Image.Convert
     , BrightnessMap
     , toDelayedAsciiArt
     , toUnboxedAsciiArt
+    , bestFit
     -- * Repa conversion
     , toArray
     , fromArray
-    -- * Image normalization 
+    -- * Image normalization and unification
     , normalize
     , unifyColor
     , averageBrightness
@@ -123,17 +124,13 @@ toDelayedAsciiArt width height bmap img =
       (\lookup (Z :. w :. h) ->
         let coords = coordinates charAreaWidth charAreaHeight w h
             rgbas  = map (\(x, y) -> lookup (Z :. x :. y)) coords
-        in (bestChar $ averageBrightness rgbas, unifyColor rgbas))
+        in (bestFit $ averageBrightness rgbas, unifyColor rgbas))
   where
     -- the complete set of coordinates of the image area
     -- that is being covered by the character with position (chX, chY)
     coordinates areaW areaH chX chY =
       [(x, y) | x <- [(chX * areaW) .. (chX * areaW + areaW)]
               , y <- [(chY * areaH) .. (chY * areaH + areaH)]]
-                  
-    -- gets the char that fits the area
-    bestChar rgbas =
-      undefined
 
 
 -- | Given a list of 'RGBA8' colors unifies them
@@ -149,7 +146,7 @@ unifyColor =
       let r' = nr `seq` (nr + fromIntegral r)
           g' = ng `seq` (ng + fromIntegral g)
           b' = nb `seq` (nb + fromIntegral b)
-          n' = n `seq` (n + 1)
+          n' = n  `seq` (n + 1)
       in ((r', g', b', 255), n')
 
     -- unwraps the accumulated colors into single average RGBA8 color
@@ -171,17 +168,23 @@ averageBrightness :: [RGBA8] -> Brightness
 averageBrightness =
     unwrapBrightness . foldl' accumulateBrightness (0, 0)
   where
-    -- accumulates average brightness, preserving the number
-    -- accumulated items
+    -- accumulates average brightness, preserving the number of
+    -- the accumulated items
     accumulateBrightness (nu, n) (r, g, b, a) =
       let rgb = (fromIntegral r + fromIntegral g + fromIntegral b) :: Integer
           nu' = nu `seq` (nu + (rgb `div` 3))
           n'  = n  `seq` (n + 1)
       in (nu', n')
 
-    -- unwraps the accumulated total brightness and computes the average
+    -- unwraps the accumulated total brightness and computes the total average
     unwrapBrightness (nu, n) | n == 0 = 0
     unwrapBrightness (nu, n) = fromIntegral $ nu `div` n
+
+
+-- | Having the 'BrightnessMap', finds the
+-- character that is the best fit for the given 'Brightness'.
+bestFit :: BrightnessMap -> Brightness -> Char
+bestFit = undefined
 
 
 -- | From ASCII art point of view this is basically the same as 'toDelayedAsciiArt',

@@ -20,3 +20,34 @@ Example:
     TBD
 
 """
+
+from PIL import Image, ImageDraw, ImageFont
+
+
+def create_char_image(char, font_path,
+                      image_size=(90, 160), font_size=120,
+                      background=(0, 0, 0), foreground=(255, 255, 255)):
+    """Renders the specified char to an image using the provided font.
+
+    Args:
+        char (str): The character to render.
+        font_path (str): The path to the ttf or otf font file.
+        image_size ((int, int)): Size of the generated image. Defaults to (90, 160).
+        font_size (int): Font size. Defaults to 120.
+        background ((int, int, int)): Background color of the generated image (R, G, B).
+            Defaults to black color (0, 0, 0).
+        foreground ((int, int, int)): The color of the rendered character (R, G, B).
+            Defaults to white color (255, 255, 255).
+
+    Returns:
+        PIL.Image: The image with the rendered char.
+
+    """
+
+    char_image = Image.new('RGB', image_size, background)
+    char_font  = ImageFont.truetype(font_path, font_size)
+    draw       = ImageDraw.Draw(char_image)
+
+    draw.text((1, 0), char, font=char_font, fill=foreground)
+
+    return char_image

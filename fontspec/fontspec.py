@@ -91,3 +91,31 @@ def eval_brightness_dict(dictionary, font_path):
     """
 
     return {c: char_brightness(create_char_image(c, font_path)) for c in dictionary}
+
+
+def normalize_brightness_dict(brightness_dict):
+    """Usually the distribution of char brightness for a given font
+    is not as diverse as we would like it to be. This results in a pretty
+    pure result during image to ASCII art conversion (if used as-is).
+
+    Because of this it's much better to normalize the brightness dictionary.
+    Normalization widens the distribution ranges to 8-bit 0-255 range.
+
+    Args:
+        brightness_dict (dict): A map of characters to brightness.
+
+    Returns:
+        dict: normalized map of characters to brightness.
+
+    """
+
+    b_min, b_max = 255, 0
+    for brightness in brightness_dict.values():
+        b_min = min(b_min, brightness)
+        b_max = max(b_max, brightness)
+
+    def widen(b):
+        """Using min and max bound widens the char brightness"""
+        return ( (b - b_min) / (b_max - b_min) ) * 255
+
+    return {char: widen(brightness) for char, brightness in brightness_dict.items()}

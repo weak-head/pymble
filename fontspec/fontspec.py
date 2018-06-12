@@ -116,6 +116,31 @@ def normalize_brightness_dict(brightness_dict):
 
     def widen(b):
         """Using min and max bound widens the char brightness"""
-        return ( (b - b_min) / (b_max - b_min) ) * 255
+        return int(round( ( (b - b_min) / (b_max - b_min) ) * 255 ))
 
     return {char: widen(brightness) for char, brightness in brightness_dict.items()}
+
+
+def save_fontspec(brightness_dict, file_path='spec.txt'):
+    """Given the character brightness dictionary outputs it
+    to simple text file. The content of the generated file could be copy-pasted
+    directly into haskell source code.
+
+    Of course it is possible to dynamically generate the fontspecs and load
+    them directly from fontspec file in pymble, but we want to keep it simple
+    stupid and do not overload it with useless functionality.
+
+    Args:
+        brightness_dict (dict): A map of characters to brightness.
+        file_pat (str): Path of the file to save the generated fontspec.
+    """
+    with open(file_path, 'w+') as f:
+        f.write('[ ')
+
+        first = True
+        for char, brightness in sorted(brightness_dict.items(), key=lambda x: x[1]):
+            if not first: f.write(', ')
+            f.write('({char}, {brightness})\n'.format(char=char, brightness=brightness))
+            first = False
+
+        f.write(']')

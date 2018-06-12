@@ -40,7 +40,7 @@ def create_char_image(char, font_path,
             Defaults to white color (255, 255, 255).
 
     Returns:
-        PIL.Image: The image with the rendered char.
+        PIL.Image: The image of the rendered char.
 
     """
 
@@ -51,3 +51,43 @@ def create_char_image(char, font_path,
     draw.text((1, 0), char, font=char_font, fill=foreground)
 
     return char_image
+
+
+def char_brightness(char_image):
+    """Given the rendered char image, computes the total
+    average char brightness.
+
+    Args:
+        char_image (Image): The image of the rendered char.
+
+    Returns:
+        int: total average char brightness.
+
+    """
+
+    total_brightness = 0
+    width, height = char_image.size
+    for w in range(width):
+        for h in range(height):
+            r, g, b = char_image.getpixel((w, h))
+            total_brightness += (r + g + b) / 3
+
+    return total_brightness / (width * height)
+
+
+def eval_brightness_dict(dictionary, font_path):
+    """Given a collection with characters and a font,
+    computes the brightness of every character in the
+    collection.
+
+    Args:
+        dictionary (list): A collection of characters that would be used
+            as a dictionary during the image conversion to ASCII art.
+        font_path (str): The path to the ttf or otf font file.
+
+    Returns:
+        dict: A map of characters to brightness.
+
+    """
+
+    return {c: char_brightness(create_char_image(c, font_path)) for c in dictionary}

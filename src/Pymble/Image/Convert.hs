@@ -187,12 +187,13 @@ averageBrightness =
 -- | Having the 'BrightnessMap', finds the
 -- character that is the best fit for the given 'Brightness'.
 bestFit :: BrightnessMap -> Brightness -> Char
+bestFit bmap brightness | null bmap = error "empty brightness map"
 bestFit bmap brightness =
-    snd $ ML.foldrWithKey pickBest (0, ' ') bmap
+    snd $ ML.foldrWithKey pickBest (head $ ML.assocs bmap) bmap
   where
     -- compare the current best fit with the
     -- new candidate and pick the best of them
-    pickBest b c best = minimumBy (compare `on` (score . fst)) ((b, c), best)
+    pickBest b c best = minimumBy (compare `on` (score . fst)) [(b, c), best]
 
     -- scores a bestfit brightness candidate
     score candidate = abs $ (fromIntegral brightness) - (fromIntegral candidate)

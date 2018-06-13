@@ -17,7 +17,17 @@ character. The final output is the generated font specification that basically
 is a map of characters and their brightness. 
 
 Example:
-    TBD
+    Generate the default fontspec::
+
+        $ python fontspec.py
+
+    Getting usage help::
+
+        $ python fontspec.py -h
+
+    Fontspec for custom dictionary and font to custom file:
+
+        $ python fontspec.py -d "1234567890" -f "monofur.ttf" -o "monofur_num_spec.txt"
 
 """
 

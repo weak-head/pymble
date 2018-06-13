@@ -21,6 +21,7 @@ Example:
 
 """
 
+import argparse
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -166,3 +167,47 @@ def generate_fontspec(dictionary, font_path='cour.ttf', file_path='spec.txt'):
     nomalized_brightness = normalize_brightness_dict(brightness_dict)
 
     save_fontspec(nomalized_brightness, file_path)
+
+
+def create_argparser():
+    """Creates and initializes the script argument parser."""
+
+    parser = argparse.ArgumentParser(
+                        description="""Generate font specification for the given dictionary.
+                                    The font specification is used by the pymble server to
+                                    render ASCII art.
+                                    """)
+
+    parser.add_argument('-d',
+                        type=str,
+                        default='TBD',
+                        dest='dictionary',
+                        help="""collection of characters that is used as a dictionary
+                             during the ASCII art generation (default: 'TBD')
+                             """)
+
+    parser.add_argument('-f',
+                        type=str,
+                        default='cour.ttf',
+                        dest='font',
+                        help="""path to the font that is used to render the generated ASCII art
+                             (default: 'cour.ttf')
+                             """)
+
+    parser.add_argument('-o',
+                        type=str,
+                        default='spec.txt',
+                        dest='filepath',
+                        help="""path to the generated file with the resulting font specification
+                             for the given dictionary (default: 'spec.txt')
+                             """)
+
+    return parser
+
+
+if __name__ == '__main__':
+
+    parser = create_argparser()
+    args = parser.parse_args()
+
+    generate_fontspec(args.dictionary, args.font, args.filepath)

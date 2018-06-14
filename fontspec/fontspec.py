@@ -25,9 +25,10 @@ Example:
 
         $ python fontspec.py -h
 
-    Fontspec for custom dictionary and font to custom file:
+    Generate fontspec for user-defined dictionary and custom font,
+    distinct brightness values and save to custom file:
 
-        $ python fontspec.py -d "1234567890" -f "monofur.ttf" -o "monofur_num_spec.txt"
+        $ python fontspec.py -d "1234567890" -f "monofur.ttf" -o "monofur_num_spec.txt" --distinct-brightness
 
 """
 
@@ -160,7 +161,19 @@ def save_fontspec(brightness_dict, file_path='spec.txt'):
         f.write(']')
 
 
-def generate_fontspec(dictionary, font_path='cour.ttf', file_path='spec.txt'):
+def distinct_brightness(dictionary):
+    """Given the brightness dictionary returns the dictionary that has
+    no items with the same brightness."""
+    distinct, unique_values = {}, set()
+    for char, brightness in dictionary.items():
+        if brightness not in unique_values:
+            distinct[char] = brightness
+            unique_values.add(brightness)
+
+    return distinct
+
+
+def generate_fontspec(dictionary, font_path='cour.ttf', file_path='spec.txt', distinct=False):
     """Generates and saves to file the specification of the specified font
     for the given collection of characters.
 
@@ -171,12 +184,17 @@ def generate_fontspec(dictionary, font_path='cour.ttf', file_path='spec.txt'):
             dictionary with characters. Defaults to 'cour.ttf'.
         file_path (str): Path to the file that would have the
             generated fontspec. Defaults to 'spec.txt'.
+        distinct (bool): Include only characters with unique brightness, first wins.
+            Defaults to 'False'.
         
     """
     brightness_dict      = eval_brightness_dict(dictionary, font_path)
-    nomalized_brightness = normalize_brightness_dict(brightness_dict)
+    normalized_brightness = normalize_brightness_dict(brightness_dict)
 
-    save_fontspec(nomalized_brightness, file_path)
+    if distinct:
+        normalized_brightness = distinct_brightness(normalized_brightness)
+
+    save_fontspec(normalized_brightness, file_path)
 
 
 def create_argparser():
@@ -212,6 +230,12 @@ def create_argparser():
                              for the given dictionary (default: 'spec.txt')
                              """)
 
+    parser.add_argument('--distinct-brightness',
+                        action='store_true',
+                        dest='distinct',
+                        help="""include only characters with unique brightness, first wins
+                             """)
+
     return parser
 
 
@@ -220,4 +244,4 @@ if __name__ == '__main__':
     parser = create_argparser()
     args = parser.parse_args()
 
-    generate_fontspec(args.dictionary, args.font, args.filepath)
+    generate_fontspec(args.dictionary, args.font, args.filepath, args.distinct)

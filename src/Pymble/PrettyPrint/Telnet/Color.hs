@@ -7,13 +7,14 @@ module Pymble.PrettyPrint.Telnet.Color
       TerminalColor(..)
     , Color
     -- * Color approximation
-    , toStandard16Color
-    , toX256Term
+    , toStandard16
+    , toXterm256
     , toGrayscale
     , toTrueColor
     -- * Utility functions
+    , bestMatchIx
     , euclideanDistance
-    -- * Color maps
+    -- * Pre-defined color maps
     , winCmdColorMap
     , xterm256ColorMap
     ) where
@@ -28,7 +29,7 @@ import Data.Word (Word8)
 data TerminalColor =
     Color16   !Word8                -- ^ Standard 16-color palette.
                                     --   Range: [0, 15].
-  | X256term  !Word8                -- ^ Extended 256-color palette for x-term.
+  | Xterm256  !Word8                -- ^ Extended 256-color palette for x-term.
                                     --   Range: [0, 255].
   | Grayscale !Word8                -- ^ Grayscale subset of the extended 256-color palette
                                     --   for x-term. Range: [232, 255].
@@ -49,30 +50,44 @@ type Color = (Word8, Word8, Word8, Word8)
 -- of the standard 16-color palette, but we use palette for Windows CMD as a reference
 -- for the color approximation.
 --
-toStandard16Color :: Color -> TerminalColor
-toStandard16Color color =
-  let distances  = map (euclideanDistance color) winCmdColorMap
-      numbered_d = zip [0..] distances
-      colorIndex = fst $ minimumBy (compare `on` snd) numbered_d
-  in Color16 colorIndex
+toStandard16 :: Color -> TerminalColor
+toStandard16 = Color16 . fromIntegral . bestMatchIx winCmdColorMap
 
 
--- |
+-- | Approximate 24-bit TrueColor to standard 
+-- <https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit 256-color> xterm palette.
 --
-toX256Term :: Color -> TerminalColor
-toX256Term = undefined
+toXterm256 :: Color -> TerminalColor
+toXterm256 = Xterm256 . fromIntegral . bestMatchIx xterm256ColorMap
 
 
--- |
+-- | Approximate 24-bit TrueColor to grayscale subset of the
+-- standard <https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit 256-color>
+-- xterm palette.
 --
 toGrayscale :: Color -> TerminalColor
-toGrayscale = undefined
+toGrayscale = Grayscale . offset . bestMatchIx xtermGrayscale
+  where
+    offset x       = fromIntegral $ 232 + x
+    xtermGrayscale = drop 231 xterm256ColorMap
 
 
--- | Converts 24-bit TrueColor to Terminal TrueColor.
+-- | Convert 24-bit TrueColor to Terminal TrueColor.
 --
 toTrueColor :: Color -> TerminalColor
 toTrueColor (r, g, b, _) = TrueColor r g b
+
+
+-- | Given the color and the color map
+-- returns the index of the color from the map
+-- that is the most similar one to the requested.
+--
+bestMatchIx :: [Color] -> Color -> Int
+bestMatchIx colorMap color =
+  let distances  = map (euclideanDistance color) colorMap
+      indexed_d  = zip [0..] distances
+      colorIndex = fst $ minimumBy (compare `on` snd) indexed_d
+  in colorIndex
 
 
 -- | Measure the Euclidean distance between two colors in RGBA space.
@@ -116,7 +131,8 @@ winCmdColorMap =
 -- <https://jonasjacek.github.io/colors/ the standard color data> as an input.
 xterm256ColorMap :: [Color]
 xterm256ColorMap =
-  [ ( 000, 000, 000, 000 )
+  [ -- Standard colors 
+    ( 000, 000, 000, 000 )
   , ( 128, 000, 000, 000 )
   , ( 000, 128, 000, 000 )
   , ( 128, 128, 000, 000 )
@@ -124,6 +140,8 @@ xterm256ColorMap =
   , ( 128, 000, 128, 000 )
   , ( 000, 128, 128, 000 )
   , ( 192, 192, 192, 000 )
+
+  -- High intensity colors
   , ( 128, 128, 128, 000 )
   , ( 255, 000, 000, 000 )
   , ( 000, 255, 000, 000 )
@@ -132,6 +150,8 @@ xterm256ColorMap =
   , ( 255, 000, 255, 000 )
   , ( 000, 255, 255, 000 )
   , ( 255, 255, 255, 000 )
+
+  -- Extended colors
   , ( 000, 000, 000, 000 )
   , ( 000, 000, 095, 000 )
   , ( 000, 000, 135, 000 )
@@ -348,6 +368,8 @@ xterm256ColorMap =
   , ( 255, 255, 175, 000 )
   , ( 255, 255, 215, 000 )
   , ( 255, 255, 255, 000 )
+
+  -- Grayscale from black to white in 24 steps
   , ( 008, 008, 008, 000 )
   , ( 018, 018, 018, 000 )
   , ( 028, 028, 028, 000 )

@@ -13,6 +13,8 @@ module Pymble.PrettyPrint.Telnet.Color
     , toTrueColor
     -- * Utility functions
     , euclideanDistance
+    -- * Color maps
+    , windowsCmdColorMap
     ) where
 
 import Data.Foldable (minimumBy)
@@ -20,9 +22,7 @@ import Data.Function (on)
 import Data.Word (Word8)
 ----------------------------------------------------------------------
 
--- | Extended ANSI compatible terminal color.
---
---  <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors ANSI colors>
+-- | Extended <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors ANSI compatible> terminal color.
 --
 data TerminalColor =
     Color16   !Word8                -- ^ Standard 16-color palette.
@@ -43,10 +43,15 @@ type Color = (Word8, Word8, Word8, Word8)
 
 
 -- | Approximate 24-bit TrueColor to standard 16-color palette.
+-- 
+-- The color approximation is done based on 'windowsCmdColorMap'.
+-- There are multiple <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors variations>
+-- of the standard 16-color palette, but we use palette for Windows CMD as a reference
+-- for the color approximation.
 --
 toStandard16Color :: Color -> TerminalColor
 toStandard16Color color =
-  let distances  = map (euclideanDistance color) standardColorMap
+  let distances  = map (euclideanDistance color) windowsCmdColorMap
       numbered_d = zip [0..] distances
       colorIndex = fst $ minimumBy (compare `on` snd) numbered_d
   in Color16 colorIndex
@@ -64,13 +69,14 @@ toGrayscale :: Color -> TerminalColor
 toGrayscale = undefined
 
 
--- |
+-- | Converts 24-bit TrueColor to Terminal TrueColor.
 --
 toTrueColor :: Color -> TerminalColor
-toTrueColor = undefined
+toTrueColor (r, g, b, _) = TrueColor r g b
 
 
--- | Evaluates Euclidean distance between two colors.
+-- | Measure the Euclidean distance between two colors in RGBA space.
+-- Alpha channel is completely ignored during the measurement.
 --
 euclideanDistance :: Color -> Color -> Int
 euclideanDistance (r1, g1, b1, _) (r2, g2, b2, _) =
@@ -80,13 +86,10 @@ euclideanDistance (r1, g1, b1, _) (r2, g2, b2, _) =
   in round . sqrt . fromIntegral $ r' + g' + b'
 
 
--- | Standard 16-color palette that is based on colors
--- from Windows Command Prompt. There are multiple
--- <https://en.wikipedia.org/wiki/ANSI_escape_code#Colors variations> of the
--- standard 16-color palette, but we use Windows CMD as a reference.
+-- | Standard 16-color palette for Windows Command Prompt.
 --
-standardColorMap :: [Color]
-standardColorMap =
+windowsCmdColorMap :: [Color]
+windowsCmdColorMap =
   [ ( 000, 000, 000, 000 ) -- Black
   , ( 128, 000, 000, 000 ) -- Red
   , ( 000, 128, 000, 000 ) -- Green

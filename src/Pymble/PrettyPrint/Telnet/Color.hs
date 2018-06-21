@@ -83,6 +83,7 @@ toTrueColor (r, g, b, _) = TrueColor r g b
 -- that is the most similar one to the requested.
 --
 bestMatchIx :: [Color] -> Color -> Int
+bestMatchIx colorMap color | null colorMap = error "empty color map"
 bestMatchIx colorMap color =
   let distances  = map (euclideanDistance color) colorMap
       indexed_d  = zip [0..] distances

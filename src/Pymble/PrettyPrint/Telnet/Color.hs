@@ -69,7 +69,7 @@ toGrayscale :: Color -> TerminalColor
 toGrayscale = Grayscale . offset . bestMatchIx xtermGrayscale
   where
     offset x       = fromIntegral $ 232 + x
-    xtermGrayscale = drop 231 xterm256ColorMap
+    xtermGrayscale = drop 232 xterm256ColorMap
 
 
 -- | Convert 24-bit TrueColor to Terminal TrueColor.

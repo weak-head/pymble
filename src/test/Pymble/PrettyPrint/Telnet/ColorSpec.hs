@@ -89,3 +89,12 @@ spec = do
                       ]
       forM_ scenarios $ \(color, expectation) ->
         bestMatchIx colorMap color `shouldBe` expectation
+
+  describe "toGrayscale" $ do
+    it "returns only grayscale xterm subset" $ do
+      let isGrayscale (Grayscale c)
+            | c < 232   = False
+            | c > 255   = False
+            | otherwise = True
+      property @((Word8, Word8, Word8, Word8) -> Bool) $
+        \color -> isGrayscale $ toGrayscale color 

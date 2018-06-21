@@ -99,6 +99,12 @@ spec = do
       property @((Word8, Word8, Word8, Word8) -> Bool) $
         \color -> isStandard $ toStandard16 color
 
+  describe "toXterm256" $ do
+    it "returns only xterm colors" $ do
+      let isXterm (Xterm256 _) = True
+      property @((Word8, Word8, Word8, Word8) -> Bool) $
+        \color -> isXterm $ toXterm256 color
+
   describe "toGrayscale" $ do
     it "returns only grayscale subset of xterm colors" $ do
       let isGrayscale (Grayscale c)
@@ -107,3 +113,15 @@ spec = do
             | otherwise = True
       property @((Word8, Word8, Word8, Word8) -> Bool) $
         \color -> isGrayscale $ toGrayscale color 
+
+  describe "toTrueColor" $ do
+    it "returns only true colors" $ do
+      let isTrueColor (TrueColor _ _ _) = True
+      property @((Word8, Word8, Word8, Word8) -> Bool) $
+        \color -> isTrueColor $ toTrueColor color
+
+    it "returns unchanged RGB color" $ do
+      let areSame (r, g, b, _) (TrueColor r' g' b') =
+           (r == r') && (g == g') && (b == b')
+      property @((Word8, Word8, Word8, Word8) -> Bool) $
+        \color -> areSame color $ toTrueColor color

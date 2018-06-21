@@ -95,10 +95,10 @@ bestMatchIx colorMap color =
 --
 euclideanDistance :: Color -> Color -> Int
 euclideanDistance (r1, g1, b1, _) (r2, g2, b2, _) =
-  let r' = (r1 - r2) ^ 2
-      g' = (g1 - g2) ^ 2
-      b' = (b1 - b2) ^ 2
-  in round . sqrt . fromIntegral $ r' + g' + b'
+  let r' = (fromIntegral r1 - fromIntegral r2) ^ 2
+      g' = (fromIntegral g1 - fromIntegral g2) ^ 2
+      b' = (fromIntegral b1 - fromIntegral b2) ^ 2
+  in round . sqrt $ r' + g' + b'
 
 
 -- | Standard 16-color palette for Windows Command Prompt.

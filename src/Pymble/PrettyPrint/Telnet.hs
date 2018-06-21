@@ -4,6 +4,11 @@
 --
 module Pymble.PrettyPrint.Telnet
     (
+    -- * Character and color encoding
+      encodeColoredChar
+    , encodeTerminalColor
+    , encodeChar
+    , encodeReset
 
     ) where
 
@@ -13,28 +18,43 @@ import Pymble.Image.Convert
 import Pymble.PrettyPrint.Telnet.Color
 ----------------------------------------------------------------------
 
--- |
+
+-- | Encodes character to be rendered with the specified 'TerminalColor'.
 --
-encodeColoredChar :: ColoredChar -> ShowS
-encodeColoredChar (char, color) = undefined
+encodeColoredChar :: TerminalColor -> Char -> ShowS
+encodeColoredChar color char =
+  encodeTerminalColor color . encodeChar char . encodeReset
 
 
--- |
+-- | Encodes 'TerminalColor' into escape sequence. The text
+-- following the sequence would have the specified
+-- foreground color.
 --
 encodeTerminalColor :: TerminalColor -> ShowS
 encodeTerminalColor = \case
-    Color16 c       -> showString "\ESC[" . shows (adj c) . end
-    Xterm256 c      -> showString "\ESC[38;5;" . shows c . end
-    Grayscale c     -> showString "\ESC[38;5;" . shows c . end
-    TrueColor r g b -> showString "\ESC[38;2;" .
-                          shows r . showString ";" .
-                          shows g . showString ";" .
-                          shows b . end
+    Color16 c       -> ss "\ESC["      . shows (toC c) . ss "m"
+    Xterm256 c      -> ss "\ESC[38;5;" . shows c       . ss "m"
+    Grayscale c     -> ss "\ESC[38;5;" . shows c       . ss "m"
+    TrueColor r g b -> ss "\ESC[38;2;" . shows r . ss ";" .
+                                         shows g . ss ";" .
+                                         shows b . ss "m"
   where
-    adj x = if x < 8 then x + 30 else x + 90 
-    end = showString "m"
+    -- adjusts [0-15] standard color to the number that is
+    -- expected by the terminal for colored output
+    -- https://en.wikipedia.org/wiki/ANSI_escape_code#SGR
+    toC x = if x < 8 then x + 30 else x + (90 - 8)
 
--- |
+    -- just a shortcut for less cluttering
+    ss = showString
+
+
+-- | Encodes character to be rendered as-is.
 --
-encodeCharacter :: Char -> ShowS
-encodeCharacter = showChar
+encodeChar :: Char -> ShowS
+encodeChar = showChar
+
+
+-- | Reset all attributes off.
+--
+encodeReset :: ShowS
+encodeReset = showString "\ESC[0;00m" 

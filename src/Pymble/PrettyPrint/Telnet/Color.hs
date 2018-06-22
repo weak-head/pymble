@@ -1,4 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UnicodeSyntax #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 --
 module Pymble.PrettyPrint.Telnet.Color
@@ -19,6 +27,9 @@ module Pymble.PrettyPrint.Telnet.Color
     , xterm256ColorMap
     ) where
 
+import Data.Vector.Unboxed.Base (Unbox)
+import Data.Vector.Unboxed.Deriving
+
 import Data.Foldable (minimumBy)
 import Data.Function (on)
 import Data.Word (Word8)
@@ -35,6 +46,24 @@ data TerminalColor =
                                     --   for x-term. Range: [232, 255].
   | TrueColor !Word8 !Word8 !Word8  -- ^ Full 24-bit TrueColor (RGB).
                                     --   Range: [0, 255] each channel.
+
+
+-- | 'Unbox', 'Vector', 'MVector' instances for 'TerminalColor'.
+--
+derivingUnbox "TerminalColor"
+  [t| TerminalColor → (Int, Word8, Word8, Word8) |]
+
+  [| \case
+       Color16       c → (0, 0, 0, c)
+       Xterm256      c → (1, 0, 0, c)
+       Grayscale     c → (2, 0, 0, c)
+       TrueColor r g b → (3, r, g, b) |]
+
+  [| \(t, r, g, b) → case t of
+        0 → Color16       b
+        1 → Xterm256      b
+        2 → Grayscale     b
+        3 → TrueColor r g b |]
 
 
 -- | Classical 24-bit TrueColor with alpha channel 

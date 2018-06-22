@@ -34,6 +34,8 @@ library:
   - http-conduit
   - repa
   - containers
+  - vector-th-unbox
+  - vector
 
 executables:
   pymble:

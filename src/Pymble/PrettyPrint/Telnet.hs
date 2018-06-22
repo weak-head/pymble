@@ -4,9 +4,10 @@
 --
 module Pymble.PrettyPrint.Telnet
     (
-    -- *
+    -- * ASCII art pretty print
       ColoredTermChar
-    , convert
+    , ColorScheme
+    , evalAsTerminalColor
     , prettyPrint
     -- * Character and color encoding
     , encodeColoredChar
@@ -17,55 +18,56 @@ module Pymble.PrettyPrint.Telnet
     , termClear
     ) where
 
-import qualified Data.Array.Repa as R
-import           Data.Tuple (swap)
+import Data.Array.Repa as R
+import Data.Bool (bool)
+import Data.Tuple (swap)
+import Data.Vector.Unboxed (ifoldl')
 
-import Pymble.Image.Convert
+import           Pymble.Image.Convert
 import qualified Pymble.PrettyPrint.Telnet.Color as TC
 ----------------------------------------------------------------------
 
 
--- |
+-- | Color scheme that is used during ASCII art pretty print.
 --
-data ColorScheme =
-    Color16
-  | Xterm256
-  | Grayscale
-  | TrueColor
+data ColorScheme = Color16 | Xterm256 | Grayscale | TrueColor
 
 
--- |
+-- | The tuple represents char that should be rendered
+-- using the specified terminal color.
 --
 type ColoredTermChar = (Char, TC.TerminalColor)
 
 
--- |
+-- | Convert delayed array of 'ColoredChar' to
+-- fully evaluated unboxed array of 'ColoredTermChar'.
 --
--- convert :: (ColoredChar -> ColoredTermChar)
---               -> DelayedArray ColoredChar
---               -> DelayedArray ColoredTermChar
--- convert = R.map
-
-
-convert :: DelayedArray ColoredTermChar -> DelayedArray String
-convert = R.map $ \c -> (uncurry $ flip $ encodeColoredChar) c ""
-
-
--- | Pretty prints the delayed array of 'ColoredTermChar' to
--- the delayed array of terminal-encoded strings.
---
-prettyPrint :: ColorScheme -> DelayedArray ColoredChar -> IO String
-prettyPrint colorScheme array = do
-    let coloredArray = R.map (fmap converter) array
-        converted    = convert coloredArray
-    -- R.foldAllP (++) [] converted
-    undefined
+evalAsTerminalColor :: ColorScheme 
+                    -> DelayedArray ColoredChar
+                    -> IO (UnboxedArray ColoredTermChar)
+evalAsTerminalColor colorScheme = R.computeP . R.map (fmap converter)
   where
     converter = case colorScheme of
       Color16   -> TC.toStandard16
       Xterm256  -> TC.toXterm256
       Grayscale -> TC.toGrayscale
       TrueColor -> TC.toTrueColor
+
+
+-- | Pretty print the fully evaluated unboxed array of 'ColoredTermChar'
+-- to the terminal-encoded string representation.
+--
+prettyPrint :: UnboxedArray ColoredTermChar -> ShowS
+prettyPrint arr =
+    let Z :. width :. _ = R.extent arr
+    in ifoldl' (compose (width - 1)) id (toUnboxed arr)
+  where
+    -- Converts and composes the colored char
+    -- to the terminal-encoded representation
+    compose width acc ix char =
+      let repr = (uncurry $ flip $ encodeColoredChar) char
+          newl = bool id (showString "\n") (ix `mod` width == 0)
+      in acc . repr . newl
 
 
 -- | Encodes character to be rendered with the specified 'TerminalColor'.

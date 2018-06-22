@@ -6,7 +6,7 @@ module Pymble.PrettyPrint.Telnet
     (
     -- * ASCII art pretty print
       ColoredTermChar
-    , ColorScheme
+    , ColorScheme(..)
     , evalAsTerminalColor
     , prettyPrint
     -- * Character and color encoding
@@ -60,7 +60,7 @@ evalAsTerminalColor colorScheme = R.computeP . R.map (fmap converter)
 prettyPrint :: UnboxedArray ColoredTermChar -> ShowS
 prettyPrint arr =
     let Z :. width :. _ = R.extent arr
-    in ifoldl' (compose (width - 1)) id (toUnboxed arr)
+    in ifoldl' (compose width) id (toUnboxed arr)
   where
     -- Converts and composes the colored char
     -- to the terminal-encoded representation

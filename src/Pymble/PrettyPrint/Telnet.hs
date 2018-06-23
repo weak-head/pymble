@@ -59,15 +59,18 @@ evalAsTerminalColor colorScheme = R.computeP . R.map (fmap converter)
 --
 prettyPrint :: UnboxedArray ColoredTermChar -> ShowS
 prettyPrint arr =
-    let Z :. width :. _ = R.extent arr
-    in ifoldl' (compose width) id (toUnboxed arr)
+    let Z :. width :. height = R.extent arr
+        coords = [(w, h) | h <- [0 .. height - 1]
+                         , w <- [0 .. width  - 1]]
+    in foldl (.) id $ (convert width) <$> coords 
   where
-    -- Converts and composes the colored char
+    -- Converts the colored char
     -- to the terminal-encoded representation
-    compose width acc ix char =
-      let repr = (uncurry $ flip $ encodeColoredChar) char
-          newl = bool id (showString "\n") (ix `mod` width == 0)
-      in acc . repr . newl
+    convert maxWidth (w, h) =
+      let char = arr ! (Z :. w :. h)
+          repr = (uncurry $ flip $ encodeColoredChar) char
+          newl = bool id (showString "\n") (w == (maxWidth - 1))
+      in repr . newl
 
 
 -- | Encodes character to be rendered with the specified 'TerminalColor'.

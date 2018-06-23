@@ -132,8 +132,8 @@ toDelayedAsciiArt width height bmap img =
     -- the complete set of coordinates of the image area
     -- that is being covered by the character with position (chX, chY)
     coordinates areaW areaH chX chY =
-      [(x, y) | x <- [(chX * areaW) .. (chX * areaW + areaW)]
-              , y <- [(chY * areaH) .. (chY * areaH + areaH)]]
+      [(x, y) | x <- [(chX * areaW) .. (chX * areaW + areaW - 1)]
+              , y <- [(chY * areaH) .. (chY * areaH + areaH - 1)]]
 
 
 -- | Given a list of 'RGBA8' colors unifies them

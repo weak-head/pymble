@@ -20,8 +20,6 @@ module Pymble.PrettyPrint.Telnet
 
 import Data.Array.Repa as R
 import Data.Bool (bool)
-import Data.Tuple (swap)
-import Data.Vector.Unboxed (ifoldl')
 
 import           Pymble.Image.Convert
 import qualified Pymble.PrettyPrint.Telnet.Color as TC
@@ -67,10 +65,9 @@ prettyPrint arr =
     -- Converts the colored char
     -- to the terminal-encoded representation
     convert maxWidth (w, h) =
-      let char = arr ! (Z :. w :. h)
-          repr = (uncurry $ flip $ encodeColoredChar) char
-          newl = bool id (showString "\n") (w == (maxWidth - 1))
-      in repr . newl
+      let (ch, tc) = arr ! (Z :. w :. h)
+          newl     = bool id (showString "\n") (w == maxWidth - 1)
+      in (encodeColoredChar tc ch) . newl
 
 
 -- | Encodes character to be rendered with the specified 'TerminalColor'.

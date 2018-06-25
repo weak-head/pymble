@@ -48,6 +48,7 @@ executables:
     dependencies:
     - pymble
     - data-default
+    - optparse-applicative
 
 tests:
   pymble-test:

@@ -6,8 +6,10 @@ module Pymble.ArgsSpec where
 
 import Test.Hspec
 import Test.QuickCheck
-import Data.Semigroup
-import Data.Maybe (maybe)
+
+import           Data.Semigroup
+import           Data.Maybe (maybe)
+import           Data.Bool (bool)
 import qualified Options.Applicative as P 
 
 import Pymble.Args
@@ -47,14 +49,65 @@ spec = do
       parseDirect []
         `shouldBe` parseFailure
 
-    it "accepts single url" $ do
+    it "parses single url" $ do
       parseDirect ["img.png"]
         `shouldBe` Right (url "img.png")
 
-    it "handles short color and url" $ do
+    it "parses short color and url" $ do
       parseDirect ["-c", "16", "img.png"] 
         `shouldBe` Right (url "img.png" <> color Color16)
 
+    it "parses long color and url" $ do
+      parseDirect ["--color", "16", "img.png"]
+        `shouldBe` Right (url "img.png" <> color Color16)
+
+    it "parses all color schemes" $ do
+      parseDirect ["-c", "16", "img.png"]
+        `shouldBe` Right (url "img.png" <> color Color16)
+      parseDirect ["-c", "256", "img.png"]
+        `shouldBe` Right (url "img.png" <> color Xterm256)
+      parseDirect ["-c", "gs", "img.png"]
+        `shouldBe` Right (url "img.png" <> color Grayscale)
+      parseDirect ["-c", "tc", "img.png"]
+        `shouldBe` Right (url "img.png" <> color TrueColor)
+
+    it "parses short width" $ do
+      parseDirect ["-w", "77", "img.png"]
+        `shouldBe` Right (url "img.png" <> width 77)
+
+    it "parses long widht" $ do
+      parseDirect ["--width", "88", "img.png"]
+        `shouldBe` Right (url "img.png" <> width 88)
+
+    it "parses short height" $ do
+      parseDirect ["-h", "14", "img.png"]
+        `shouldBe` Right (url "img.png" <> height 14)
+
+    it "parses long height" $ do
+      parseDirect ["--height", "45", "img.png"]
+        `shouldBe` Right (url "img.png" <> height 45)
+
+    it "parses full short string" $ do
+      parseDirect ["-c", "256", "-w", "45", "-h", "25", "img.png"]
+        `shouldBe` Right (  url "img.png"
+                         <> color Xterm256
+                         <> width 45
+                         <> height 25)
+
+    it "parses full long string" $ do
+      parseDirect ["--width", "155", "--color", "tc", "--height", "77", "img.png"]
+        `shouldBe` Right (  url "img.png"
+                         <> color TrueColor
+                         <> width 155
+                         <> height 77)
+
+    it "fails on input with double url" $ do
+      parseDirect ["-c", "256", "-w", "45", "-h", "25", "img.png", "img2.png"]
+        `shouldBe` parseFailure
+
+    it "fails on input with unknown argument" $ do
+      parseDirect ["-w", "77", "-b", "24", "img.png"]
+        `shouldBe` parseFailure
 
 
 --- helpers ----------------------------
@@ -83,10 +136,10 @@ completionRequested = Left "completion requested"
 instance Semigroup StartupMode where
   (DirectConvert w1 h1 c1 u1) <> (DirectConvert w2 h2 c2 u2) =
     DirectConvert
-      (maybe w2 (Just) w1)
-      (maybe h2 (Just) h1)
-      (maybe c2 (Just) c1)
-      (if null u1 then u2 else u1)
+      (maybe w2 Just w1)
+      (maybe h2 Just h1)
+      (maybe c2 Just c1)
+      (bool u1 u2 $ null u1)
 
 url :: String -> StartupMode
 url = DirectConvert Nothing Nothing Nothing

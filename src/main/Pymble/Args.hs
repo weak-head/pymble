@@ -77,7 +77,7 @@ directConvert = DirectConvert
            long    "color"
         <> short   'c'
         <> help    "Color scheme of the generated ASCII art"
-        <> metavar "(16|256|grayscale|truecolor)" )
+        <> metavar "(16|256|gs|tc)" )
 
  <*> (strArgument $ 
            metavar "URL" 

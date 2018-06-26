@@ -6,7 +6,8 @@ module Main (main) where
 
 import Data.Default
 import Options.Applicative
-import Data.Semigroup((<>))
+import Data.Semigroup ((<>))
+import Data.Maybe (maybe)
 
 import Pymble.AppConfig
 import Pymble.Telnet.Server (startServer)
@@ -44,24 +45,29 @@ main = runApp =<< execParser optsParser
 --
 runApp :: StartupMode -> IO ()
 runApp = \case
-  ts@(TelnetServer port)       -> print ts 
-  dc@(DirectConvert w h c url) -> print dc 
+  ts@(TelnetServer port)     -> runTelnetServer port 
+  dc@(DirectConvert _ _ _ _) -> runDirectConvert dc
 
 
--- Just a dirty example to check the logic
-runTest :: IO ()
-runTest = do
-  let url = "https://media.istockphoto.com/photos/red-apple-picture-id495878092?k=6&m=495878092&s=612x612&w=0&h=q9k5jN-1giBGZgTM6QhyKkPqtGf6vRpkgDzAwEz9DkY="
+-- | Dirty direct convert for testing purposes.
+--
+runDirectConvert :: StartupMode -> IO ()
+runDirectConvert (DirectConvert mWidth mHeight mColor url) = do
+  let width  = maybe 80 id mWidth
+      height = maybe 45 id mHeight
+      color  = maybe Color16 id mColor
+  
   image <- fromJust . normalize <$> download url
 
-  let delayedColoredArt = toDelayedAsciiArt 80 40 courierFull image 
-  coloredArt <- evalAsTerminalColor Color16 delayedColoredArt
+  let delayedArt = toDelayedAsciiArt width height courierFull image
+
+  coloredArt <- evalAsTerminalColor color delayedArt
 
   putStrLn $ termClear . (prettyPrint coloredArt) $ ""
 
 
--- |
+-- | Dirty bootstrap of the telnet server.
 --
 runTelnetServer :: Int -> IO ()
 runTelnetServer port =
-  startServer def
+  startServer $ def { _appServerPort = port }

@@ -36,6 +36,7 @@ library:
   - containers
   - vector-th-unbox
   - vector
+  - optparse-applicative
 
 executables:
   pymble:

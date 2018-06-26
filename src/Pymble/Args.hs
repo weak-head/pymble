@@ -36,7 +36,7 @@ type Url    = String
 data StartupMode
   = TelnetServer Port
   | DirectConvert (Maybe Width) (Maybe Height) (Maybe ColorScheme) Url
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 -- |

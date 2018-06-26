@@ -30,6 +30,7 @@ import qualified Pymble.PrettyPrint.Telnet.Color as TC
 -- | Color scheme that is used during ASCII art pretty print.
 --
 data ColorScheme = Color16 | Xterm256 | Grayscale | TrueColor
+  deriving (Eq)
 
 -- | Naive implementation for flexible color term output.
 --

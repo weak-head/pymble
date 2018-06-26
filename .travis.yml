@@ -20,4 +20,8 @@ install:
   - stack -j2 $ARGS build --only-snapshot --no-terminal
 
 script:
-  - stack -j2 $ARGS --no-terminal test --haddock --no-haddock-deps --bench
+  - stack -j2 $ARGS --no-terminal test :pymble-test --haddock --no-haddock-deps --bench --coverage
+
+after_script:
+  - travis_retry curl -L https://github.com/rubik/stack-hpc-coveralls/releases/download/v0.0.4.0/shc-linux-x64-8.0.1.tar.bz2 | tar -xj
+  - ./shc pymble pymble-test

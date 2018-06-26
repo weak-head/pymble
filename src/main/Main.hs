@@ -1,6 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
+-- |
+--
 module Main (main) where
 
 import Data.Default
+import Options.Applicative
+import Data.Semigroup((<>))
 
 import Pymble.AppConfig
 import Pymble.Telnet.Server (startServer)
@@ -11,13 +17,35 @@ import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
 import Pymble.Image.Fontspec (courierFull)
 import Pymble.PrettyPrint.Telnet (evalAsTerminalColor, prettyPrint, termClear, ColorScheme(..))
 
+import Pymble.Args (startupMode, StartupMode(..))
+----------------------------------------------------------------------
+
 
 -- | Application Main
 --
 main :: IO ()
-main = do
-  runTest  
-  --startServer def
+main = runApp =<< execParser optsParser
+  where
+    -- configure arg parser
+    optsParser = info (helper' <*> version <*> startupMode)
+      (  fullDesc
+      <> progDesc "image to ASCII art converter (tbd)"
+      <> header "pymble - telnet server that converts images to ASCII art (tbd)" )
+   
+    -- app version
+    version = infoOption "0.9" (long "version" <> help "Show version")
+
+    -- the default helper binds '-h' to show help info,
+    -- but we want to use '-h' exclusively for height
+    helper' = abortOption ShowHelpText (long "help" <> help "Show this help text")
+
+
+-- |
+--
+runApp :: StartupMode -> IO ()
+runApp = \case
+  ts@(TelnetServer port)       -> print ts 
+  dc@(DirectConvert w h c url) -> print dc 
 
 
 -- Just a dirty example to check the logic
@@ -31,3 +59,9 @@ runTest = do
 
   putStrLn $ termClear . (prettyPrint coloredArt) $ ""
 
+
+-- |
+--
+runTelnetServer :: Int -> IO ()
+runTelnetServer port =
+  startServer def

@@ -109,11 +109,31 @@ spec = do
       parseDirect ["-w", "77", "-b", "24", "img.png"]
         `shouldBe` parseFailure
 
+  
+  describe "startupMode" $ do
+    it "parses to telnet server" $ do
+      parseStartupMode []
+        `shouldBe` Right (TelnetServer 23)
+      parseStartupMode ["-p", "77"]
+        `shouldBe` Right (TelnetServer 77)
+      parseStartupMode ["--port", "127"]
+        `shouldBe` Right (TelnetServer 127)
+
+    it "parses to direct convert" $ do
+      parseStartupMode ["img.png"]
+        `shouldBe` Right (url "img.png")
+      parseStartupMode ["-w", "14", "img.png"]
+        `shouldBe` Right (url "img.png" <> width 14) 
+      parseStartupMode ["-w", "80", "-h", "45", "img.png"]
+        `shouldBe` Right (url "img.png" <> width 80 <> height 45)
+      parseStartupMode ["-c", "gs", "img.png"]
+        `shouldBe` Right (url "img.png" <> color Grayscale)
+
 
 --- helpers ----------------------------
 
-parseMode :: [String] -> Either String StartupMode
-parseMode = runParser startupMode
+parseStartupMode :: [String] -> Either String StartupMode
+parseStartupMode = runParser startupMode
 
 parseTelnet :: [String] -> Either String StartupMode
 parseTelnet = runParser telnetServer

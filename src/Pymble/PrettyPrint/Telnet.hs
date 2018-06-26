@@ -20,6 +20,7 @@ module Pymble.PrettyPrint.Telnet
 
 import Data.Array.Repa as R
 import Data.Bool (bool)
+import Data.Char (toLower)
 
 import           Pymble.Image.Convert
 import qualified Pymble.PrettyPrint.Telnet.Color as TC
@@ -29,7 +30,26 @@ import qualified Pymble.PrettyPrint.Telnet.Color as TC
 -- | Color scheme that is used during ASCII art pretty print.
 --
 data ColorScheme = Color16 | Xterm256 | Grayscale | TrueColor
-  deriving (Read, Show, Eq, Ord)
+
+-- | Naive implementation for flexible color term output.
+--
+instance Show ColorScheme where
+  show = \case
+    Color16   -> "16"
+    Xterm256  -> "256"
+    Grayscale -> "gs"
+    TrueColor -> "tc"
+
+-- | Naive implementation for flexible arg parsing.
+--
+instance Read ColorScheme where
+  readsPrec _ str =
+    case toLower <$> str of
+      "16"  -> [(Color16, "")]
+      "256" -> [(Xterm256, "")]
+      "gs"  -> [(Grayscale, "")]
+      "tc"  -> [(TrueColor, "")]
+      _     -> []
 
 
 -- | The tuple represents char that should be rendered

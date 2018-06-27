@@ -11,6 +11,7 @@ module Pymble.PrettyPrint.Telnet
     , prettyPrint
     -- * Character and color encoding
     , encodeColoredChar
+    , encodeColoredString
     , encodeTerminalColor
     , encodeChar
     , encodeReset
@@ -97,6 +98,13 @@ prettyPrint arr =
 encodeColoredChar :: TC.TerminalColor -> Char -> ShowS
 encodeColoredChar color char =
   encodeTerminalColor color . encodeChar char . encodeReset
+
+
+-- | Encodes string to be rendered with the specified 'TerminalColor'.
+--
+encodeColoredString :: TC.TerminalColor -> String -> ShowS
+encodeColoredString color str =
+  encodeTerminalColor color . showString str . encodeReset 
 
 
 -- | Encodes 'TerminalColor' into escape sequence. The text

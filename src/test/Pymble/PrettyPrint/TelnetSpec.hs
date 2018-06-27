@@ -64,3 +64,8 @@ spec = do
     it "encodes with color and reset" $ do
       encodeColoredChar (TC.Color16 2) 't' ""
         `shouldBe` "\ESC[32mt\ESC[0;00m"
+
+  describe "encodeColoredString" $ do
+    it "encodes with color and reset" $ do
+      encodeColoredString (TC.Xterm256 90) "the string" ""
+        `shouldBe` "\ESC[38;5;90mthe string\ESC[0;00m"

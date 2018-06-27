@@ -132,6 +132,15 @@ spec = do
       hasDuplicates winCmdColorMap
         `shouldBe` False
 
+    it "contains 16 colors" $ do
+      length winCmdColorMap
+        `shouldBe` 16
+
+    -- this explicit indexing trick allows to track code coverage
+    it "has zero alpha for every color" $ do
+      forM_ [0 .. 15] $ \index ->
+        (\(_, _, _, a) -> a `shouldBe` 0) (winCmdColorMap !! index) 
+
   describe "xterm256ColorMap" $ do
     it "has no duplicates" $ do
       -- Standard 16 color map intersects
@@ -140,6 +149,15 @@ spec = do
         `shouldBe` False
       hasDuplicates (take 16 xterm256ColorMap)
         `shouldBe` False
+
+    it "contains 256 colors" $ do
+      length xterm256ColorMap
+        `shouldBe` 256
+
+    -- this explicit indexing trick allows to track code coverage
+    it "has zero alpha for every color" $ do
+      forM_ [0 .. 255] $ \index ->
+        (\(_, _, _, a) -> a `shouldBe` 0) (xterm256ColorMap !! index)
 
 
 --- helpers ----------------------------

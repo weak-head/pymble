@@ -21,7 +21,24 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  
+
+  describe "StartupMode" $ do
+    it "is comparable" $ do
+      (TelnetServer 23 == TelnetServer 24)
+        `shouldBe` False
+      (TelnetServer 14 == url "img.png")
+        `shouldBe` False
+      ((url "img" <> width 14) == (url "img"))
+        `shouldBe` False
+      (TelnetServer 44 == TelnetServer 44)
+        `shouldBe` True
+      ((url "img" <> height 44) == (height 44 <> url "img"))
+        `shouldBe` True
+    it "is showable" $ do
+      show (url "img" <> width 14 <> height 7 <> color Color16)
+        `shouldBe` "DirectConvert (Just 14) (Just 7) (Just 16) \"img\""
+
+
   describe "telnetServer" $ do
     it "parses short port" $ do
       parseTelnet ["-p", "88"]

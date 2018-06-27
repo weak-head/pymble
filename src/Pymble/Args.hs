@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
--- |
+-- | This module covers the command line argument parsing.
 --
 module Pymble.Args
     ( 
-    -- *
+    -- * Command line argument parsing
       StartupMode(..)
     , Width
     , Height
     , Url
     , startupMode
-    -- *
+    -- * Concrete parsers
     , telnetServer
     , directConvert
     ) where
@@ -31,7 +31,8 @@ type Height = Int
 type Url    = String
 
 
--- |
+-- | Pymble can be started as a telnet server or output
+-- the generated ASCII art directly to terminal.
 --
 data StartupMode
   = TelnetServer Port
@@ -39,13 +40,13 @@ data StartupMode
   deriving (Show, Eq)
 
 
--- |
+-- | Parses the pymble startup mode.
 --
 startupMode :: Parser StartupMode
 startupMode = directConvert <|> telnetServer
 
 
--- |
+-- | The parser for 'TelnetServer' startup mode.
 --
 telnetServer :: Parser StartupMode
 telnetServer = TelnetServer <$> option auto
@@ -57,7 +58,7 @@ telnetServer = TelnetServer <$> option auto
     <> showDefault )
 
 
--- |
+-- | The parser for 'DirectConvert' startup mode.
 --
 directConvert :: Parser StartupMode
 directConvert = DirectConvert

@@ -15,7 +15,7 @@
     </a>
     <a href="https://github.com/weak-head/pymble/blob/master/LICENSE">
         <img alt="License: MIT"
-             src="https://img.shields.io/badge/license-MIT-yellow.svg">
+             src="https://img.shields.io/badge/license-MIT-blue.svg">
     </a>
 </p>
 

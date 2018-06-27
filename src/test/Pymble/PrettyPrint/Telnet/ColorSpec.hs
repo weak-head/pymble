@@ -6,6 +6,7 @@ module Pymble.PrettyPrint.Telnet.ColorSpec where
 import Control.Exception (evaluate)
 import Control.Monad (forM_)
 import Data.Word
+import qualified Data.Set as S
 import Test.Hspec
 import Test.QuickCheck
 
@@ -125,3 +126,29 @@ spec = do
            (r == r') && (g == g') && (b == b')
       property @((Word8, Word8, Word8, Word8) -> Bool) $
         \color -> areSame color $ toTrueColor color
+
+  describe "winCmdColorMap" $ do
+    it "has no duplicates" $ do
+      hasDuplicates winCmdColorMap
+        `shouldBe` False
+
+  describe "xterm256ColorMap" $ do
+    it "has no duplicates" $ do
+      -- Standard 16 color map intersects
+      -- with the extended colors
+      hasDuplicates (drop 16 xterm256ColorMap)
+        `shouldBe` False
+      hasDuplicates (take 16 xterm256ColorMap)
+        `shouldBe` False
+
+
+--- helpers ----------------------------
+
+hasDuplicatesWith :: Ord a => S.Set a -> [a] -> Bool
+hasDuplicatesWith known [] = False
+hasDuplicatesWith known (x:xs)
+  | S.member x known = True
+  | otherwise        = hasDuplicatesWith (S.insert x known) xs
+
+hasDuplicates :: Ord a => [a] -> Bool
+hasDuplicates = hasDuplicatesWith S.empty

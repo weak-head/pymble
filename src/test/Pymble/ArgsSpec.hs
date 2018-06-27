@@ -37,6 +37,8 @@ spec = do
     it "is showable" $ do
       show (url "img" <> width 14 <> height 7 <> color Color16)
         `shouldBe` "DirectConvert (Just 14) (Just 7) (Just 16) \"img\""
+      show (TelnetServer 172)
+        `shouldBe` "TelnetServer 172"
 
 
   describe "telnetServer" $ do

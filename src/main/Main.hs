@@ -13,7 +13,7 @@ import Pymble.AppConfig
 import Pymble.Telnet.Server (startServer)
 
 import Data.Maybe (fromJust)
-import Pymble.Image.HTTP (download)
+import Pymble.Image.Storage (load)
 import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
 import Pymble.Image.Fontspec (courierFull)
 import Pymble.Image.Helpers (adviceSize)
@@ -58,7 +58,7 @@ runDirectConvert (DirectConvert mWidth mHeight mColor url) = do
 
   -- todo: replace with utility calls
   putStrLn $ encodeColoredString (TC.Color16 3) "Reading image..." ""
-  maybeImage <- normalize <$> download url
+  maybeImage <- normalize <$> load url
 
   case maybeImage of
 

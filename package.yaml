@@ -26,6 +26,7 @@ library:
   dependencies:
   - data-default
   - network
+  - network-uri
   - transformers
   - monad-loops
   - time
@@ -37,6 +38,7 @@ library:
   - vector-th-unbox
   - vector
   - optparse-applicative
+  - directory
 
 executables:
   pymble:

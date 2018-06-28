@@ -16,7 +16,9 @@ import Data.Maybe (fromJust)
 import Pymble.Image.HTTP (download)
 import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
 import Pymble.Image.Fontspec (courierFull)
-import Pymble.PrettyPrint.Telnet (evalAsTerminalColor, prettyPrint, termClear, ColorScheme(..))
+import Pymble.Image.Helpers (adviceSize)
+import Pymble.PrettyPrint.Telnet (evalAsTerminalColor, encodeColoredString, prettyPrint, termClear, ColorScheme(..))
+import qualified Pymble.PrettyPrint.Telnet.Color as TC
 
 import Pymble.Args (startupMode, StartupMode(..))
 ----------------------------------------------------------------------
@@ -53,17 +55,28 @@ runApp = \case
 --
 runDirectConvert :: StartupMode -> IO ()
 runDirectConvert (DirectConvert mWidth mHeight mColor url) = do
-  let width  = maybe 80 id mWidth
-      height = maybe 45 id mHeight
-      color  = maybe Color16 id mColor
-  
-  image <- fromJust . normalize <$> download url
 
-  let delayedArt = toDelayedAsciiArt width height courierFull image
+  -- todo: replace with utility calls
+  putStrLn $ encodeColoredString (TC.Color16 3) "Reading image..." ""
+  maybeImage <- normalize <$> download url
 
-  coloredArt <- evalAsTerminalColor color delayedArt
+  case maybeImage of
 
-  putStrLn $ termClear . (prettyPrint coloredArt) $ ""
+    Just image -> do
+      let (width, height) = adviceSize mWidth mHeight
+          color           = maybe Color16 id mColor
+          delayedArt      = toDelayedAsciiArt width height courierFull image
+
+      putStrLn $ encodeColoredString (TC.Color16 3) "Converting image..." ""
+      coloredArt <- evalAsTerminalColor color delayedArt
+
+      let printedArt = prettyPrint coloredArt
+          cleanPrint = termClear . printedArt
+
+      putStrLn $ cleanPrint ""
+
+    Nothing -> do
+      putStrLn $ encodeColoredString (TC.Color16 1) "failed to retrieve image" ""
 
 
 -- | Dirty bootstrap of the telnet server.

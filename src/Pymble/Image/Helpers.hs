@@ -1,25 +1,37 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Pymble.Image.Helpers
   (
   -- * Advice ASCII art width and height
-    Width
-  , Height
-  , AspectRatio
+    ArtWidth
+  , ArtHeight
+  , ImageWidth
+  , ImageHeight
+  , FontAspectRatio
   , adviceSize
   , adviceSizeWithRatio
+  -- * Image helpers
+  , imageSize
   ) where
 
+import qualified Codec.Picture as P
 ----------------------------------------------------------------------
 
 -- | ASCII art width (in characters).
-type Width  = Int
+type ArtWidth  = Int
 
 -- | ASCII art height (in characters).
-type Height = Int
+type ArtHeight = Int
+
+-- | Image width
+type ImageWidth = Int
+
+-- | Image height
+type ImageHeight = Int
 
 -- | Font aspect ratio.
-type AspectRatio = Double
+type FontAspectRatio = Double
 
 
 -- | Optionally given the ASCII art width and height
@@ -30,9 +42,10 @@ type AspectRatio = Double
 -- aspect ratio of 0.58 to advice the ASCII art
 -- width and height.
 --
-adviceSize :: Maybe Width
-           -> Maybe Height
-           -> (Width, Height)
+adviceSize :: (ImageWidth, ImageHeight)
+           -> Maybe ArtWidth
+           -> Maybe ArtHeight
+           -> (ArtWidth, ArtHeight)
 adviceSize = adviceSizeWithRatio 0.58
 
 
@@ -59,12 +72,38 @@ adviceSize = adviceSizeWithRatio 0.58
 --     Trebuchet          0.52
 --     Verdana            0.58
 --
-adviceSizeWithRatio :: AspectRatio
-                    -> Maybe Width
-                    -> Maybe Height
-                    -> (Width, Height)
-adviceSizeWithRatio ratio _         _       | ratio <= 0 = error "ratio should be greater than zero"
-adviceSizeWithRatio ratio Nothing  Nothing  = adviceSizeWithRatio ratio (Just 80) Nothing 
-adviceSizeWithRatio ratio (Just w) Nothing  = (w, round $ (fromIntegral w) * ratio)
-adviceSizeWithRatio ratio Nothing  (Just h) = (round $ (fromIntegral h) / ratio, h)
-adviceSizeWithRatio ratio (Just w) (Just h) = (w, h)
+adviceSizeWithRatio :: FontAspectRatio
+                    -> (ImageWidth, ImageHeight)
+                    -> Maybe ArtWidth
+                    -> Maybe ArtHeight
+                    -> (ArtWidth, ArtHeight)
+adviceSizeWithRatio ratio _ _ _
+  | ratio <= 0 = error "ratio should be greater than zero"
+
+adviceSizeWithRatio _ (iw, ih) _ _
+  | iw <= 0 = error "image width should be greater than zero"
+  | ih <= 0 = error "image height should be greater than zero"
+
+adviceSizeWithRatio ratio isize Nothing  Nothing =
+  adviceSizeWithRatio ratio isize (Just 80) Nothing 
+
+adviceSizeWithRatio ratio (iw, ih) (Just w) Nothing =
+  let iwhRatio = (fromIntegral iw) / (fromIntegral ih)
+      aspectH  = (fromIntegral w) * ratio
+      realH    = aspectH / iwhRatio
+  in (w, round realH)
+
+adviceSizeWithRatio ratio (iw, ih) Nothing  (Just h) =
+  let iwhRatio = (fromIntegral iw) / (fromIntegral ih)
+      aspectW  = (fromIntegral h) / ratio
+      realW    = aspectW * iwhRatio
+  in (round realW, h)
+
+adviceSizeWithRatio ratio (iw, ih) (Just w) (Just h) =
+  (w, h)
+
+
+-- | Get the width and the height of the image.
+--
+imageSize :: P.Image a -> (ImageWidth, ImageHeight)
+imageSize P.Image {..} = (imageWidth, imageHeight)

@@ -16,7 +16,7 @@ import Data.Maybe (fromJust)
 import Pymble.Image.Storage (load)
 import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
 import Pymble.Image.Fontspec (courierFull)
-import Pymble.Image.Helpers (adviceSize)
+import Pymble.Image.Helpers (adviceSize, imageSize)
 import Pymble.PrettyPrint.Telnet (evalAsTerminalColor, encodeColoredString, prettyPrint, termClear, ColorScheme(..))
 import qualified Pymble.PrettyPrint.Telnet.Color as TC
 
@@ -63,7 +63,8 @@ runDirectConvert (DirectConvert mWidth mHeight mColor url) = do
   case maybeImage of
 
     Just image -> do
-      let (width, height) = adviceSize mWidth mHeight
+      let isize           = imageSize image 
+          (width, height) = adviceSize isize mWidth mHeight
           color           = maybe Color16 id mColor
           delayedArt      = toDelayedAsciiArt width height courierFull image
 

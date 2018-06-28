@@ -18,28 +18,50 @@ spec = do
 
   describe "adviceSize" $ do
     it "has default value" $ do
-      adviceSize Nothing Nothing
+      adviceSize (200, 200) Nothing Nothing
         `shouldBe` (80, 46)
     
     it "uses 0.58 font aspect ratio" $ do
-      adviceSize (Just 100) Nothing
+      adviceSize (300, 300) (Just 100) Nothing
         `shouldBe` (100, 58)
-      adviceSize Nothing (Just 58)
+      adviceSize (400, 400) Nothing (Just 58)
         `shouldBe` (100, 58)
+
+    it "adjusts art size based on the actual image size" $ do
+      adviceSize (300, 150) (Just 100) Nothing
+        `shouldBe` (100, 29)
+      adviceSize (150, 300) (Just 100) Nothing
+        `shouldBe` (100, 116)
 
   describe "adviceSizeWithRatio" $ do
     it "uses default width value (80)" $ do
-      adviceSizeWithRatio 0.50 Nothing Nothing
+      adviceSizeWithRatio 0.50 (120, 120) Nothing Nothing
         `shouldBe` (80, 40)
 
     it "advices based on custom ratio" $ do
-      adviceSizeWithRatio 0.45 (Just 100) Nothing
+      adviceSizeWithRatio 0.45 (120, 120) (Just 100) Nothing
         `shouldBe` (100, 45)
-      adviceSizeWithRatio 0.67 Nothing (Just 67)
+      adviceSizeWithRatio 0.67 (150, 150) Nothing (Just 67)
         `shouldBe` (100, 67)
 
+    it "adjusts art size based on the actual image size" $ do
+      adviceSizeWithRatio 0.50 (120, 60) (Just 100) Nothing
+        `shouldBe` (100, 25)
+      adviceSizeWithRatio 0.67 (50, 150) Nothing (Just 67)
+        `shouldBe` (33, 67)
+
     it "throws on zero or negative ratio" $ do
-      evaluate (adviceSizeWithRatio 0 Nothing Nothing)
+      evaluate (adviceSizeWithRatio 0 (100, 100) Nothing Nothing)
         `shouldThrow` errorCall "ratio should be greater than zero"
-      evaluate (adviceSizeWithRatio (negate 0.25) Nothing Nothing)
+      evaluate (adviceSizeWithRatio (negate 0.25) (150, 150) Nothing Nothing)
         `shouldThrow` errorCall "ratio should be greater than zero"
+    
+    it "throws on zero or negative image size" $ do
+      evaluate (adviceSizeWithRatio 0.58 (0, 100) Nothing Nothing)
+        `shouldThrow` errorCall "image width should be greater than zero"
+      evaluate (adviceSizeWithRatio 0.58 (negate 10, 100) Nothing Nothing)
+        `shouldThrow` errorCall "image width should be greater than zero"
+      evaluate (adviceSizeWithRatio 0.58 (100, 0) Nothing Nothing)
+        `shouldThrow` errorCall "image height should be greater than zero"
+      evaluate (adviceSizeWithRatio 0.58 (100, negate 10) Nothing Nothing)
+        `shouldThrow` errorCall "image height should be greater than zero"

@@ -33,6 +33,7 @@ library:
   - exceptions
   - JuicyPixels
   - http-conduit
+  - http-types
   - repa
   - containers
   - vector-th-unbox

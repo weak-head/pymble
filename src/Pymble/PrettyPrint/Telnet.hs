@@ -15,8 +15,11 @@ module Pymble.PrettyPrint.Telnet
     , encodeTerminalColor
     , encodeChar
     , encodeReset
-    -- * Terminal control sequences
+    -- * Hi-level terminal control
+    , MessageType(..)
     , termClear
+    , termMsg
+    , termMsgIO
     ) where
 
 import Data.Array.Repa as R
@@ -140,8 +143,31 @@ encodeChar = showChar
 encodeReset :: ShowS
 encodeReset = showString "\ESC[0;00m"
 
+--------------------------------------------------------
+
+-- | Type of the message to display on the terminal
+data MessageType = Info | Warning | Success | Error
+  deriving (Eq)
+
 
 -- | Clear terminal.
 --
 termClear :: ShowS
 termClear = showString "\ESC[2J"
+
+
+-- | Composes message.
+--
+termMsg :: MessageType -> String -> ShowS
+termMsg msgt = encodeColoredString (toColor msgt)
+  where toColor = \case
+          Info    -> TC.Color16 7 -- white 
+          Warning -> TC.Color16 3 -- yellow
+          Success -> TC.Color16 2 -- green
+          Error   -> TC.Color16 1 -- red
+
+
+-- | Outputs message directly to terminal.
+--
+termMsgIO :: MessageType -> String -> IO ()
+termMsgIO t m = putStrLn $ termMsg t m ""

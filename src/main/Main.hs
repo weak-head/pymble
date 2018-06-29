@@ -5,22 +5,22 @@
 module Main (main) where
 
 import Data.Default
-import Options.Applicative
-import Data.Semigroup ((<>))
-import Data.Maybe (maybe)
-
-import Pymble.AppConfig
-import Pymble.Telnet.Server (startServer)
-
 import Data.Maybe (fromJust)
-import Pymble.Image.Storage (load)
-import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
-import Pymble.Image.Fontspec (courierFull)
-import Pymble.Image.Helpers (adviceSize, imageSize)
-import Pymble.PrettyPrint.Telnet (evalAsTerminalColor, encodeColoredString, prettyPrint, termClear, ColorScheme(..))
-import qualified Pymble.PrettyPrint.Telnet.Color as TC
+import Data.Maybe (maybe)
+import Data.Semigroup ((<>))
+import Control.Exception (catch) 
+import Options.Applicative
 
-import Pymble.Args (startupMode, StartupMode(..))
+import           Pymble.AppConfig
+import           Pymble.Args
+import           Pymble.Image.Convert (normalize, toDelayedAsciiArt)
+import           Pymble.Image.Fontspec
+import           Pymble.Image.Helpers
+import           Pymble.Image.Storage (load)
+import           Pymble.PrettyPrint.Telnet
+import qualified Pymble.PrettyPrint.Telnet.Color as TC
+import           Pymble.Telnet.Server (startServer)
+
 ----------------------------------------------------------------------
 
 
@@ -51,33 +51,23 @@ runApp = \case
   dc@(DirectConvert _ _ _ _) -> runDirectConvert dc
 
 
--- | Dirty direct convert for testing purposes.
+-- | Convert image to ASCII art and outputs the art to terminal.
 --
 runDirectConvert :: StartupMode -> IO ()
 runDirectConvert (DirectConvert mWidth mHeight mColor url) = do
 
-  -- todo: replace with utility calls
-  putStrLn $ encodeColoredString (TC.Color16 3) "Reading image..." ""
-  maybeImage <- normalize <$> load url
+  termMsgIO Info "Loading image..."
+  image <- (fromJust . normalize <$> load url)
 
-  case maybeImage of
+  let (width, height) = adviceSize (imageSize image) mWidth mHeight
+      color           = maybe Color16 id mColor
+      delayedArt      = toDelayedAsciiArt width height courierFull image
 
-    Just image -> do
-      let isize           = imageSize image 
-          (width, height) = adviceSize isize mWidth mHeight
-          color           = maybe Color16 id mColor
-          delayedArt      = toDelayedAsciiArt width height courierFull image
+  termMsgIO Info "Converting image..."
+  coloredArt <- evalAsTerminalColor color delayedArt
 
-      putStrLn $ encodeColoredString (TC.Color16 3) "Converting image..." ""
-      coloredArt <- evalAsTerminalColor color delayedArt
-
-      let printedArt = prettyPrint coloredArt
-          cleanPrint = termClear . printedArt
-
-      putStrLn $ cleanPrint ""
-
-    Nothing -> do
-      putStrLn $ encodeColoredString (TC.Color16 1) "failed to retrieve image" ""
+  putStrLn "\n"
+  putStrLn $ prettyPrint coloredArt ""
 
 
 -- | Dirty bootstrap of the telnet server.

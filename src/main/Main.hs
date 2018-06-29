@@ -10,7 +10,7 @@ import Data.Maybe (fromJust)
 import Data.Maybe (maybe)
 import Data.Semigroup ((<>))
 import Options.Applicative
-import Control.Monad.Catch
+import Control.Monad.Catch (catches)
 
 import           Pymble.AppConfig
 import           Pymble.Args
@@ -21,7 +21,6 @@ import           Pymble.Image.Storage
 import           Pymble.PrettyPrint.Telnet
 import qualified Pymble.PrettyPrint.Telnet.Color as TC
 import           Pymble.Telnet.Server (startServer)
-import           Pymble.Exception
 
 ----------------------------------------------------------------------
 
@@ -53,13 +52,13 @@ runApp = \case
   dc@(DirectConvert _ _ _ _) -> runDirectConvert dc
 
 
--- | Convert image to ASCII art and outputs the art to terminal.
+-- | Convert the image to ASCII art and print the art directly to terminal.
 --
 runDirectConvert :: StartupMode -> IO ()
 runDirectConvert (DirectConvert mWidth mHeight mColor url) =
   do
     termMsgIO Info "Loading image..."
-    maybeImage <- (normalize <$> load url) `catches` handler
+    maybeImage <- (normalize <$> load url) `catches` defLoadHandlers
 
     case maybeImage of
       Right image -> do
@@ -67,40 +66,15 @@ runDirectConvert (DirectConvert mWidth mHeight mColor url) =
             color           = maybe Color16 id mColor
             delayedArt      = toDelayedAsciiArt width height courierFull image
 
-        termMsgIO Info "Converting image..."
+        termMsgIO Info "Generating ASCII art..."
         coloredArt <- evalAsTerminalColor color delayedArt
 
-        putStrLn "\n"
-        putStrLn $ prettyPrint coloredArt ""
+        putStrLn "\n" >> (putStrLn $ prettyPrint coloredArt "") >> putStrLn "\n"
 
       Left err -> termMsgIO Error err
 
-  where
-    handler = 
-      [ Handler $ \(ex :: MalformedUriException) ->
-          msg "malformed uri"
 
-      , Handler $ \(ex :: InvalidUriException) ->
-          msg "invalid uri"
-
-      , Handler $ \(ex :: ImageDecodeException) ->
-          msg "decode exception"
-
-      , Handler $ \(ex :: DownloadFailureException) ->
-          msg "download failure"
-
-      , Handler $ \(ex :: ConnectionFailureException) ->
-          msg "connection failure"
-
-      , Handler $ \(ex :: RetrievalFailureException) ->
-          msg "retrieval failure"
-
-      , Handler $ \(ex :: PymbleException) -> 
-          msg "pymble exception" ]
-    
-    msg = return . Left
-
--- | Dirty bootstrap of the telnet server.
+-- | Bootstrap telnet server.
 --
 runTelnetServer :: Int -> IO ()
 runTelnetServer port =

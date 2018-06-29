@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Pymble.Image.Storage
     (
@@ -12,6 +13,7 @@ module Pymble.Image.Storage
     , DownloadFailureException(..)
     , ConnectionFailureException(..)
     , RetrievalFailureException(..)
+    , defLoadHandlers
     -- * General facade
     , load
     -- * Concrete loaders
@@ -20,7 +22,8 @@ module Pymble.Image.Storage
     ) where
 
 import Codec.Picture
-import Control.Exception
+import Control.Exception (throwIO)
+import Control.Monad.Catch
 import Control.Monad (join)
 import Data.Typeable
 import Network.HTTP.Conduit
@@ -96,7 +99,7 @@ instance Exception DownloadFailureException where
 -- | Failed to connect to the server.
 --
 data ConnectionFailureException =
-  ConnectionFailureException
+  ConnectionFailureException { _cfeUrl :: String }
   deriving (Show)
 
 instance Exception ConnectionFailureException where
@@ -112,6 +115,39 @@ data RetrievalFailureException =
 instance Exception RetrievalFailureException where
   toException   = imageRetrievalExceptionToException
   fromException = imageRetrievalExceptionFromException
+
+
+-- | Default set of exception handlers for 'load' function.
+-- The exception handlers convert exception to the default string representation.
+--
+defLoadHandlers :: [Handler IO (Either String a)]
+defLoadHandlers =
+    [ Handler $ \(ex :: MalformedUriException) ->
+        msg $ "Malformed URL: \"" ++ _mueUri ex ++ "\""
+
+    , Handler $ \(ex :: InvalidUriException) ->
+        msg $ "Invalid URL: \"" ++ _iueUri ex ++ "\""
+
+    , Handler $ \(ex :: ImageDecodeException) ->
+        msg $ "Unable to decode the image: unknown format"
+
+    , Handler $ \(ex :: DownloadFailureException) ->
+        msg $ concat [ "Failed to download the image ("
+                      , show $ _dfeCode ex
+                      , " "
+                      , _dfeMsg ex
+                      , ")"
+                      ]
+
+    , Handler $ \(ex :: ConnectionFailureException) ->
+        msg $ "Unable to connect to the remote server: \""
+                ++ _cfeUrl ex ++ "\""
+
+    , Handler $ \(ex :: RetrievalFailureException) ->
+        msg $ "Unable to load the image" ]
+  where
+    msg = return . Left
+
 
 ----------------------------------------
 
@@ -158,7 +194,7 @@ download url = do
         in throwIO $ DownloadFailureException code (show msg)
 
       HttpExceptionRequest _ (ConnectionFailure _) ->
-        throwIO ConnectionFailureException
+        throwIO $ ConnectionFailureException url
       
       InvalidUrlException _ _ ->
         throwIO $ InvalidUriException url

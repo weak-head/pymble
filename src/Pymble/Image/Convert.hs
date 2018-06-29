@@ -215,16 +215,16 @@ toUnboxedAsciiArt width height bmap img = R.computeP $ toDelayedAsciiArt width h
 -- that has a classical 8-bit pixel representation and could be
 -- further processed by other functions in this module.
 --
-normalize :: P.DynamicImage -> Maybe RGBAImage
+normalize :: P.DynamicImage -> Either String RGBAImage
 normalize dynamicImage =
   case dynamicImage of
-    P.ImageY8     i -> Just $ PT.promoteImage i
-    P.ImageYA8    i -> Just $ PT.promoteImage i
-    P.ImageRGB8   i -> Just $ PT.promoteImage i
-    P.ImageRGBA8  i -> Just i
-    P.ImageYCbCr8 i -> Just $ PT.promoteImage (PT.convertImage i :: P.Image P.PixelRGB8)
-    P.ImageCMYK8  i -> Just $ PT.promoteImage (PT.convertImage i :: P.Image P.PixelRGB8)
-    _               -> Nothing
+    P.ImageY8     i -> Right $ PT.promoteImage i
+    P.ImageYA8    i -> Right $ PT.promoteImage i
+    P.ImageRGB8   i -> Right $ PT.promoteImage i
+    P.ImageRGBA8  i -> Right i
+    P.ImageYCbCr8 i -> Right $ PT.promoteImage (PT.convertImage i :: P.Image P.PixelRGB8)
+    P.ImageCMYK8  i -> Right $ PT.promoteImage (PT.convertImage i :: P.Image P.PixelRGB8)
+    _               -> Left "Failed to promote image"
 
 
 -- | Converts the classical 8-bit 'RGBAImage' to the

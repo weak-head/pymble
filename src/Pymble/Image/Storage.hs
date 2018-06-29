@@ -5,13 +5,13 @@
 module Pymble.Image.Storage
     (
     -- * Exceptions
-      ImageRetrievalException
-    , MalformedUriException
-    , InvalidUriException
-    , ImageDecodeException
-    , DownloadFailureException
-    , ConnectionFailureException
-    , RetrievalFailureException 
+      ImageRetrievalException(..)
+    , MalformedUriException(..)
+    , InvalidUriException(..)
+    , ImageDecodeException(..)
+    , DownloadFailureException(..)
+    , ConnectionFailureException(..)
+    , RetrievalFailureException(..)
     -- * General facade
     , load
     -- * Concrete loaders

@@ -24,22 +24,22 @@ dependencies:
 library:
   source-dirs: src/
   dependencies:
-  - data-default
-  - network
-  - network-uri
-  - transformers
-  - monad-loops
-  - time
-  - exceptions
   - JuicyPixels
+  - containers
+  - data-default
+  - directory
+  - exceptions
   - http-conduit
   - http-types
-  - repa
-  - containers
-  - vector-th-unbox
-  - vector
+  - monad-loops
+  - network
+  - network-uri
   - optparse-applicative
-  - directory
+  - repa
+  - time
+  - transformers
+  - vector
+  - vector-th-unbox
 
 executables:
   pymble:
@@ -53,6 +53,7 @@ executables:
     - pymble
     - data-default
     - optparse-applicative
+    - exceptions
 
 tests:
   pymble-test:

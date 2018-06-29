@@ -5,6 +5,7 @@ module Pymble.Exception
   (
   -- * Base pymble exception
     PymbleException(..)
+  -- * Helpers
   , pymbleExceptionToException
   , pymbleExceptionFromException
   ) where
@@ -23,9 +24,13 @@ instance Show PymbleException where
 
 instance Exception PymbleException
 
+-- | Converts 'PymbleException' to general exception.
+--
 pymbleExceptionToException :: Exception e => e -> SomeException
 pymbleExceptionToException = toException . PymbleException
 
+-- | Converts general exception to 'PymbleException'
+--
 pymbleExceptionFromException :: Exception e => SomeException -> Maybe e
 pymbleExceptionFromException x = do
   PymbleException e <- fromException x

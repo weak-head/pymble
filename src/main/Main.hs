@@ -1,31 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 -- |
 --
 module Main (main) where
 
-import Data.Default
-import Data.Maybe (fromJust)
+import Control.Monad.Catch (catches)
+import Data.Default (def)
 import Data.Maybe (maybe)
 import Data.Semigroup ((<>))
 import Options.Applicative
-import Control.Monad.Catch (catches)
 
-import           Pymble.AppConfig
-import           Pymble.Args
-import           Pymble.Image.Convert (normalize, toDelayedAsciiArt)
-import           Pymble.Image.Fontspec
-import           Pymble.Image.Helpers
-import           Pymble.Image.Storage
-import           Pymble.PrettyPrint.Telnet
-import qualified Pymble.PrettyPrint.Telnet.Color as TC
-import           Pymble.Telnet.Server (startServer)
+import Pymble.AppConfig (AppConfig(..))
+import Pymble.Args (startupMode, StartupMode(..))
+import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
+import Pymble.Image.Fontspec (courierFull)
+import Pymble.Image.Helpers (adviceSize, imageSize)
+import Pymble.Image.Storage (load, defLoadHandlers)
+import Pymble.PrettyPrint.Telnet
+import Pymble.Telnet.Server (startServer)
 
 ----------------------------------------------------------------------
 
 
--- | Application Main
+-- | Application entry point.
 --
 main :: IO ()
 main = runApp =<< execParser optsParser
@@ -37,14 +34,14 @@ main = runApp =<< execParser optsParser
       <> header "pymble - telnet server that converts images to ASCII art (tbd)" )
    
     -- app version
-    version = infoOption "0.9" (long "version" <> help "Show version")
+    version = infoOption "0.1.0-alpha" (long "version" <> help "Show version")
 
     -- the default helper binds '-h' to show help info,
     -- but we want to use '-h' exclusively for height
     helper' = abortOption ShowHelpText (long "help" <> help "Show this help text")
 
 
--- |
+-- | Run the application based on the startup mode.
 --
 runApp :: StartupMode -> IO ()
 runApp = \case

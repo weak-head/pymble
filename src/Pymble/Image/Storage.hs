@@ -21,14 +21,13 @@ module Pymble.Image.Storage
     , read
     ) where
 
-import Codec.Picture
+import Codec.Picture (readImage, decodeImage, DynamicImage)
 import Control.Exception (throwIO)
-import Control.Monad.Catch
-import Control.Monad (join)
-import Data.Typeable
-import Network.HTTP.Conduit
-import Network.HTTP.Simple
-import Network.HTTP.Types.Status
+import Control.Monad.Catch (catch, Exception(..), Handler(..), SomeException(..))
+import Data.Typeable (cast)
+import Network.HTTP.Conduit (responseStatus, HttpExceptionContent(..))
+import Network.HTTP.Simple (httpBS, parseRequest, getResponseBody, HttpException(..))
+import Network.HTTP.Types.Status (Status(..))
 import Network.URI (isURI)
 import Prelude hiding (read)
 import System.Directory (doesFileExist)
@@ -167,8 +166,11 @@ load url = do
 -- and decode it to 'P.DynamicImage'.
 --
 read :: String -> IO DynamicImage
-read path =
-  join $ either error return <$> readImage path
+read path = do
+  maybeImage <- readImage path
+  case maybeImage of
+    Right i -> return i
+    Left  m -> throwIO $ ImageDecodeException m
 
 
 -- | Download the image over HTTP

@@ -26,7 +26,7 @@ import Control.Exception (throwIO)
 import Control.Monad.Catch (catch, Exception(..), Handler(..), SomeException(..))
 import Data.Typeable (cast)
 import Network.HTTP.Conduit (responseStatus, HttpExceptionContent(..))
-import Network.HTTP.Simple (httpBS, parseRequest, getResponseBody, HttpException(..))
+import Network.HTTP.Simple (httpBS, parseRequest, getResponseBody, getResponseStatus, HttpException(..))
 import Network.HTTP.Types.Status (Status(..))
 import Network.URI (isURI)
 import Prelude hiding (read)
@@ -185,6 +185,11 @@ download url = do
 
     response <- (parseRequest url >>= httpBS) 
                   `catch` handler
+
+    _ <- case getResponseStatus response of
+          (Status 200  _  ) -> return ()
+          (Status code msg) ->
+            throwIO $ DownloadFailureException code (show msg)
 
     case decodeImage (getResponseBody response) of
       Right i -> return i

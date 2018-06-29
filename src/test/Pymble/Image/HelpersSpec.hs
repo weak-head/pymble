@@ -33,6 +33,12 @@ spec = do
       adviceSize (150, 300) (Just 100) Nothing
         `shouldBe` (100, 116)
 
+    it "returns width and height if explicitly specified" $ do
+      adviceSize (300, 150) (Just 20) (Just 180)
+        `shouldBe` (20, 180)
+      adviceSize (200, 200) (Just 40) (Just 40)
+        `shouldBe` (40, 40)
+
   describe "adviceSizeWithRatio" $ do
     it "uses default width value (80)" $ do
       adviceSizeWithRatio 0.50 (120, 120) Nothing Nothing
@@ -49,6 +55,12 @@ spec = do
         `shouldBe` (100, 25)
       adviceSizeWithRatio 0.67 (50, 150) Nothing (Just 67)
         `shouldBe` (33, 67)
+
+    it "returns width and height if explicitly specified" $ do
+      adviceSizeWithRatio 0.22 (300, 150) (Just 20) (Just 180)
+        `shouldBe` (20, 180)
+      adviceSizeWithRatio 0.87 (200, 200) (Just 40) (Just 40)
+        `shouldBe` (40, 40)
 
     it "throws on zero or negative ratio" $ do
       evaluate (adviceSizeWithRatio 0 (100, 100) Nothing Nothing)

@@ -18,7 +18,7 @@ import Options.Applicative
 import Data.Semigroup ((<>))
 
 import Pymble.AppConfig (Port)
-import Pymble.PrettyPrint.Telnet (ColorScheme(..))
+import Pymble.PrettyPrint.Terminal (ColorScheme(..))
 ----------------------------------------------------------------------
 
 -- | ASCII art width in characters

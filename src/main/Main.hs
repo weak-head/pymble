@@ -16,7 +16,7 @@ import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
 import Pymble.Image.Fontspec (courierFull)
 import Pymble.Image.Helpers (adviceSize, imageSize)
 import Pymble.Image.Storage (load, defLoadHandlers)
-import Pymble.PrettyPrint.Telnet
+import Pymble.PrettyPrint.Terminal
 import Pymble.Telnet.Server (startServer)
 
 ----------------------------------------------------------------------

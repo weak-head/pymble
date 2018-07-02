@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Pymble.PrettyPrint.Telnet.ColorSpec where
+module Pymble.PrettyPrint.Terminal.ColorSpec where
 
 import Control.Exception (evaluate)
 import Control.Monad (forM_)
@@ -10,7 +10,7 @@ import qualified Data.Set as S
 import Test.Hspec
 import Test.QuickCheck
 
-import Pymble.PrettyPrint.Telnet.Color 
+import Pymble.PrettyPrint.Terminal.Color 
 ----------------------------------------------------------------------
 
 main :: IO ()

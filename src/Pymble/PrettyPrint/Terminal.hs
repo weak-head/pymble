@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 -- |
 --
-module Pymble.PrettyPrint.Telnet
+module Pymble.PrettyPrint.Terminal
     (
     -- * ASCII art pretty print
       ColoredTermChar
@@ -27,7 +27,7 @@ import Data.Bool (bool)
 import Data.Char (toLower)
 
 import           Pymble.Image.Convert
-import qualified Pymble.PrettyPrint.Telnet.Color as TC
+import qualified Pymble.PrettyPrint.Terminal.Color as TC
 ----------------------------------------------------------------------
 
 

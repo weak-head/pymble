@@ -9,7 +9,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- |
 --
-module Pymble.PrettyPrint.Telnet.Color
+module Pymble.PrettyPrint.Terminal.Color
     (
     -- * Common types
       TerminalColor(..)

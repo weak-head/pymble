@@ -47,9 +47,10 @@ forkClient sock sockAddr appConfig =
 
     -- initializes client state
     mkState sock sockAddr = ClientState {
-        _csConnected  = True
-      , _csSocket     = sock
-      , _csSockAddr   = sockAddr
+        _csSocket        = sock
+      , _csSockAddr      = sockAddr
+      , _csConnected     = True
+      , _csDefRenderConf = RenderConfig Nothing Nothing Nothing
       }
 
 

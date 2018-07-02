@@ -25,6 +25,7 @@ library:
   source-dirs: src/
   dependencies:
   - JuicyPixels
+  - bytestring
   - containers
   - data-default
   - directory

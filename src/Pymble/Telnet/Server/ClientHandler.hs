@@ -1,70 +1,66 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pymble.Telnet.Server.ClientHandler (
-    Environment(..)
-  , Log
-  , ClientState(..)
-  , ClientHandler
-
-  -------------------
+module Pymble.Telnet.Server.ClientHandler
+  (
+  -- *
+    forkClient
+  -- *
   , serveClient
+  , handleClientRequests
+  ) where
 
-) where
-
-import Network.Socket                     as NS
+import Control.Concurrent (forkIO, ThreadId)
 import Control.Monad (void)
-import Control.Monad.Catch                as MC
+import Control.Monad.Catch (finally)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (iterateWhile)
-import Control.Monad.Trans.RWS            as MT
-import Data.List (intercalate)
-import Data.Time.Clock (getCurrentTime)
+import Control.Monad.Trans.RWS (execRWST, get)
+import Network.Socket (close, Socket, SockAddr)
 
+import Pymble.AppConfig
+import Pymble.Telnet.Server.Commands
 ----------------------------------------------------------------------
 
--- | Encapsulates all the necessary
--- environment configuration and information.
+
+-- | Forks a dedicated thread to process the connected client
 --
-data Environment = Environment {
-    _envDbConnectionInfo :: String
-  } deriving (Eq, Show)
+forkClient :: Socket
+           -> SockAddr
+           -> AppConfig
+           -> IO ThreadId
+forkClient sock sockAddr appConfig =
+    forkIO $ do
+      (clientState, log) <- execRWST serveClient
+                              (mkEnv appConfig)
+                              (mkState sock sockAddr)
+      -- Basically here we can save the generated log
+      -- and react on the resulting client state.
+      -- ATM handleClient has no actual value to return
+      -- but this could be changed in the future.
+      return ()
 
+  where
+    -- initializes environment
+    mkEnv conf = Environment {
+        _envDbConnectionInfo = _appDbConnectionInfo conf
+      }
 
--- | The log of all interactions with a client.
---
--- Temporary using [String] to satisfy monoid laws
---
-type Log = [String]
-
-
--- | Reflects the state of the session
--- and the connected client.
---
-data ClientState = ClientState {
-    _csSocket     :: NS.Socket
-  , _csSockAddr   :: NS.SockAddr
-  , _csConnected  :: Bool
-  } deriving (Eq, Show)
-
-
--- | The telnet client handler monad
--- with an access to the environment information,
--- that is capable of accumulating log entries and
--- preserves the client connection state.
---
-type ClientHandler a = MT.RWST Environment Log ClientState IO a
-
-----------------------------------------------------------------------
+    -- initializes client state
+    mkState sock sockAddr = ClientState {
+        _csConnected  = True
+      , _csSocket     = sock
+      , _csSockAddr   = sockAddr
+      }
 
 
 -- | The main routine to handle clients
 -- connected via telnet.
 --
-serveClient :: ClientHandler ()
+serveClient :: CommandHandler ()
 serveClient = do
   writeLogStr "Connected"
 
-  handleClientRequests `MC.finally` do
+  handleClientRequests `finally` do
     -- we want to make sure that the client socket
     -- is being closed even if some unexpected exception happens
     get >>= liftIO . close . _csSocket
@@ -73,7 +69,7 @@ serveClient = do
 
 -- | The main client processing loop.
 --
-handleClientRequests :: ClientHandler ()
+handleClientRequests :: CommandHandler ()
 handleClientRequests = void $ iterateWhile _csConnected $ do
   undefined
 
@@ -81,26 +77,3 @@ handleClientRequests = void $ iterateWhile _csConnected $ do
   -- so iterateWhile can detect
   -- when the client is disconnected
   get
-
-----------------------------------------------------------------------
-
-writeLogStr :: String -> ClientHandler ()
-writeLogStr message = do
-  now  <- show <$> liftIO getCurrentTime
-  addr <- show . _csSockAddr <$> get
-
-  -- idealy we dont want to use [String] for the log
-  -- and we want to replace it with some appropriate
-  -- implementation, but for now we work with slow
-  -- linked list and ugly strings.
-  let logEntry = intercalate " | "
-                  [ now
-                  , addr
-                  , message
-                  ]
-
-  liftIO $ putStrLn logEntry
-
-  -- this forces us to append to the end of linked list
-  -- every single time... extremely unefficient.
-  tell [logEntry]

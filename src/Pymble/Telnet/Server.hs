@@ -1,16 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pymble.Telnet.Server (
-  startServer
-) where
+module Pymble.Telnet.Server
+  (
+  -- *
+    startServer
+  -- *
+  , handleClients
+  , getAddress
+  -- *
+  , ConnectionHandler
+  , ConnectionHandlerConfig(..)
+  ) where
 
-import Network.Socket             as NS
-import Control.Concurrent         as CC
-import Control.Monad              as CM
-import Control.Monad.IO.Class     as CMC
-import Control.Monad.Trans.Reader as TR
-import Control.Monad.Trans.RWS    as MT
-import Control.Exception          as E
+import qualified Control.Concurrent         as CC
+import qualified Control.Exception          as E
+import qualified Control.Monad              as CM
+import qualified Control.Monad.IO.Class     as CMC
+import qualified Control.Monad.Trans.RWS    as MT
+import qualified Control.Monad.Trans.Reader as TR
+import qualified Network.Socket             as NS
 
 import Pymble.AppConfig
 import Pymble.Telnet.Server.ClientHandler
@@ -51,8 +59,8 @@ startServer conf = NS.withSocketsDo $ do
       -- Try to get a socket to bind the telnet server listener
       sock <- NS.socket (NS.addrFamily addrInfo) NS.Stream NS.defaultProtocol
 
-      -- This socket will accept the connections from all
-      -- the telnet clients
+      -- This socket will accept connections from all
+      -- our telnet clients
       let sockAddr = NS.addrAddress addrInfo
       NS.bind sock sockAddr 
       NS.listen sock 5
@@ -82,36 +90,8 @@ handleClients = CM.forever $ do
   -- 
   -- As of now we are not tracking ThreadId, but it could
   -- be a good idea to keep track of the created threads
-  -- and the clients. Possibly using Control.ThreadPool. 
-  liftIO $ forkClient sock sockAddr (_ccAppConfig config)
-
-
--- | Forks a dedicated thread to process the connected client
---
-forkClient :: NS.Socket -> NS.SockAddr -> AppConfig -> IO CC.ThreadId
-forkClient sock sockAddr appConfig =
-    forkIO $ do
-      (clientState, log) <- MT.execRWST serveClient
-                                (mkEnv appConfig)
-                                (mkState sock sockAddr)
-      -- Basically here we can save the generated log
-      -- and react on the resulting client state.
-      -- ATM handleClient has no actual value to return
-      -- but this could be changed in the future.
-      return ()
-
-  where
-    -- initializes environment
-    mkEnv conf = Environment {
-        _envDbConnectionInfo = _appDbConnectionInfo conf
-      }
-
-    -- initializes client state
-    mkState sock sockAddr = ClientState {
-        _csConnected  = True
-      , _csSocket     = sock
-      , _csSockAddr   = sockAddr
-      }
+  -- and the clients.
+  CMC.liftIO $ forkClient sock sockAddr (_ccAppConfig config)
 
 
 -- | Given the port, gets address to bind
@@ -121,7 +101,7 @@ getAddress :: Port -> IO NS.AddrInfo
 getAddress port =
   let
       hints = NS.defaultHints {
-          addrFlags = [NS.AI_PASSIVE]
+          NS.addrFlags = [NS.AI_PASSIVE]
         }
   in
     head <$> NS.getAddrInfo (Just hints) Nothing (Just $ show port) 

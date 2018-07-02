@@ -1,69 +1,72 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+-- | This is the main module and the entry point
+-- for the telnet server related functionality.
+--
+-- The 'startServer' pretty much does all the work to host,
+-- start the server and handle the telnet clients.
+--
 module Pymble.Telnet.Server
   (
-  -- *
+  -- * Telnet server bootstrap
     startServer
-  -- *
-  , handleClients
-  , getAddress
-  -- *
+  -- * Client processing
   , ConnectionHandler
   , ConnectionHandlerConfig(..)
+  , handleClients
+  -- * Helpers
+  , getAddress
   ) where
 
-import qualified Control.Concurrent         as CC
-import qualified Control.Exception          as E
-import qualified Control.Monad              as CM
-import qualified Control.Monad.IO.Class     as CMC
-import qualified Control.Monad.Trans.RWS    as MT
-import qualified Control.Monad.Trans.Reader as TR
-import qualified Network.Socket             as NS
+import Control.Exception (bracket)
+import Control.Monad (forever)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
+import Network.Socket
 
-import Pymble.AppConfig
-import Pymble.Telnet.Server.ClientHandler
+import Pymble.AppConfig (AppConfig(..), Port)
+import Pymble.Telnet.Server.ClientHandler (forkClient)
 ----------------------------------------------------------------------
 
--- | The root telnet client handler 
+-- | The telnet server monad for handling newly connected clients.
 --
-type ConnectionHandler = TR.ReaderT ConnectionHandlerConfig IO ()
+type ConnectionHandler = ReaderT ConnectionHandlerConfig IO ()
 
 
--- | The configuration that is used by ConnectionHandler to
--- establish and handle client connections
+-- | The hight level telnet server configuration,
+-- that is used by the 'ConnectionHandler' to
+-- establish and handle client connections.
 --
 data ConnectionHandlerConfig = ConnectionHandlerConfig {
-    _ccSocket    :: NS.Socket
-  , _ccAppConfig :: AppConfig
+    _ccSocket    :: Socket      -- ^ Socket, the telnet server is listening to
+  , _ccAppConfig :: AppConfig   -- ^ App startup config
   } deriving (Eq, Show)
 
 
--- | Given the startup configuration, creates
+-- | Given the application startup configuration, creates
 -- and starts a telnet server on the specified port.
 --
 -- This is a blocking call and the control would not be
--- returned untill the telnet service is terminated.
+-- returned until the telnet service is terminated.
 --
 startServer :: AppConfig -> IO ()
-startServer conf = NS.withSocketsDo $ do
+startServer conf = withSocketsDo $ do
     addrInfo <- getAddress $ _appServerPort conf
 
-    E.bracket (open addrInfo) NS.close $ \sock -> do
+    bracket (open addrInfo) close $ \sock -> do
       -- Accept and handle connections from the clients
-      TR.runReaderT handleClients (mkConfig conf sock)
+      runReaderT handleClients (mkConfig conf sock)
 
   where
-    -- bind and open socket
+    -- bind and open telnet socket
     open addrInfo = do
 
       -- Try to get a socket to bind the telnet server listener
-      sock <- NS.socket (NS.addrFamily addrInfo) NS.Stream NS.defaultProtocol
+      sock <- socket (addrFamily addrInfo) Stream defaultProtocol
 
-      -- This socket will accept connections from all
-      -- our telnet clients
-      let sockAddr = NS.addrAddress addrInfo
-      NS.bind sock sockAddr 
-      NS.listen sock 5
+      -- This socket will accept connections from the newly connected clients
+      let sockAddr = addrAddress addrInfo
+      bind sock sockAddr 
+      listen sock 5
 
       putStrLn $ "The telnet server is running on " ++ show sockAddr
       return sock
@@ -75,15 +78,16 @@ startServer conf = NS.withSocketsDo $ do
         }
 
 
--- | The main entry point to handle all the connections
--- from the telnet clients.
+-- | The main telnet server processing loop.
+-- Handles all new connections and forks a dedicated
+-- thread for every single connected client.
 --
 handleClients :: ConnectionHandler
-handleClients = CM.forever $ do
-  config <- TR.ask
+handleClients = forever $ do
+  config <- ask
 
   -- accept the connection from the next telnet client
-  (sock, sockAddr) <- CMC.liftIO $ NS.accept (_ccSocket config)
+  (sock, sockAddr) <- liftIO $ accept (_ccSocket config)
 
   -- Using dedicated thread to handle the communication
   -- with the client.
@@ -91,17 +95,14 @@ handleClients = CM.forever $ do
   -- As of now we are not tracking ThreadId, but it could
   -- be a good idea to keep track of the created threads
   -- and the clients.
-  CMC.liftIO $ forkClient sock sockAddr (_ccAppConfig config)
+  liftIO $ forkClient sock sockAddr (_ccAppConfig config)
 
 
--- | Given the port, gets address to bind
--- a socket.
+-- | Given the port, gets an 'AddrInfo' to bind a socket.
 --
-getAddress :: Port -> IO NS.AddrInfo
+getAddress :: Port -> IO AddrInfo
 getAddress port =
-  let
-      hints = NS.defaultHints {
-          NS.addrFlags = [NS.AI_PASSIVE]
+  let hints = defaultHints {
+          addrFlags = [AI_PASSIVE]
         }
-  in
-    head <$> NS.getAddrInfo (Just hints) Nothing (Just $ show port) 
+  in head <$> getAddrInfo (Just hints) Nothing (Just $ show port) 

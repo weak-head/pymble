@@ -13,7 +13,7 @@ import           Data.Bool (bool)
 import qualified Options.Applicative as P 
 
 import Pymble.Args
-import Pymble.PrettyPrint.Telnet (ColorScheme(..))
+import Pymble.PrettyPrint.Terminal (ColorScheme(..))
 ----------------------------------------------------------------------
 
 main :: IO ()

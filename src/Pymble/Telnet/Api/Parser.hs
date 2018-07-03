@@ -14,7 +14,18 @@ module Pymble.Telnet.Api.Parser
   , commandParser
   , helpParser
   , viewConfigParser
+  , updateConfigParser
   , quitParser
+
+  -- * Parser helpers
+  , configSettingsParser
+  , colorSchemeParser
+  , widthParser
+  , heightParser
+
+  -- * Combinators
+  , word
+  , number
   ) where
 
 import Control.Applicative ((<|>))
@@ -25,6 +36,11 @@ import Data.Void
 
 import Text.Megaparsec
 import Text.Megaparsec.Char (eol, space, string', alphaNumChar)
+import Text.Megaparsec.Perm
+import Text.Megaparsec.Char.Lexer (decimal)
+
+import Pymble.PrettyPrint.Terminal (ColorScheme(..))
+
 ----------------------------------------------------------------------
 
 -- |
@@ -32,7 +48,7 @@ import Text.Megaparsec.Char (eol, space, string', alphaNumChar)
 data Command =
     Help
   | ViewConfig
-  | UpdateConfig
+  | UpdateConfig (Maybe ColorScheme) (Maybe Int) (Maybe Int)
   | Render
   | Quit
   deriving (Show, Eq)
@@ -45,6 +61,13 @@ type ParsingError = String
 --
 type Parser = Parsec Void String
 
+-- |
+--
+data ConfigSettings = ConfigSettings {
+    _csColor  :: Maybe ColorScheme
+  , _csWidth  :: Maybe Int
+  , _csHeight :: Maybe Int
+  } deriving (Eq, Show)
 
 -- |
 --
@@ -64,8 +87,10 @@ parseCommandBS = parseCommand . unpack
 --
 commandParser :: Parser Command
 commandParser =
-      helpParser
-  <|> quitParser
+      try helpParser
+  <|> try viewConfigParser
+  <|> try updateConfigParser
+  <|> try quitParser
 
 
 -- | Parser for the 'Help' command.
@@ -82,6 +107,20 @@ viewConfigParser =
   word "config" >> eof >> return ViewConfig
 
 
+-- | Parser for the 'UpdateConfig' command.
+--
+updateConfigParser :: Parser Command
+updateConfigParser = do
+    word "config"
+    (ConfigSettings c w h) <- configSettingsParser >>= validate
+    eof
+    return $ UpdateConfig c w h
+  where
+    validate (ConfigSettings Nothing Nothing Nothing) =
+      fail "Explicit configuration settings are expected"
+    validate cs = return cs
+
+
 -- | Parser for the 'Quit' command.
 --
 quitParser :: Parser Command
@@ -94,6 +133,57 @@ quitParser =
 
 ----------------------------------------------------------------------
 
+-- |
+--
+configSettingsParser :: Parser ConfigSettings
+configSettingsParser =
+  makePermParser (ConfigSettings
+    <$?> (Nothing, Just <$> colorSchemeParser)
+    <|?> (Nothing, Just <$> widthParser)
+    <|?> (Nothing, Just <$> heightParser)) 
+
+
+-- |
+--
+colorSchemeParser :: Parser ColorScheme
+colorSchemeParser = do
+    keyword >> color
+  where
+    keyword = try (word "color")
+          <|> try (word "c")
+
+    color = try c16
+        <|> try c256
+        <|> try gs
+        <|> try tc
+    
+    c16  = word "16"  >> return Color16
+    c256 = word "256" >> return Xterm256
+    gs   = word "gs"  >> return Grayscale
+    tc   = word "tc"  >> return TrueColor
+
+
+-- |
+--
+widthParser :: Parser Int
+widthParser =
+    keyword >> number
+  where
+    keyword = try (word "width")
+          <|> try (word "w")
+
+
+-- |
+--
+heightParser :: Parser Int
+heightParser =
+    keyword >> number
+  where
+    keyword = try (word "height")
+          <|> try (word "h")
+
+----------------------------------------------------------------------
+
 -- | Strictly match the word (case insensitive),
 -- ignoring whitespace on both sides.
 --
@@ -102,3 +192,13 @@ word w = do
   space
   string' w *> notFollowedBy alphaNumChar
   space
+
+
+-- | Parse integral number,
+-- ignoring whitespace on both sides.
+number :: Integral a => Parser a
+number = do
+  space
+  d <- decimal
+  space
+  return d

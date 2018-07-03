@@ -7,10 +7,11 @@ import Test.Hspec
 import Test.QuickCheck
 import Prelude hiding (fail)
 
+import Data.Semigroup
 import Text.Megaparsec
 
 import Pymble.Telnet.Api.Parser
-
+import Pymble.PrettyPrint.Terminal
 ----------------------------------------------------------------------
 
 main :: IO ()
@@ -48,6 +49,7 @@ spec = do
       parseWith helpParser "  HeLP  "
         `shouldBe` cmd Help
 
+
   describe "viewConfigParser" $ do
     it "fails on empty string" $ do
       parseWith viewConfigParser ""
@@ -76,6 +78,33 @@ spec = do
     it "case insensitive" $ do
       parseWith viewConfigParser "  ConFIg  "
         `shouldBe` cmd ViewConfig
+
+
+  describe "updateConfigParser" $ do
+    it "fails on empty string" $ do
+      parseWith updateConfigParser ""
+        `shouldBe` fail
+
+    it "fails on absence of settings" $ do
+      parseWith updateConfigParser "config"
+        `shouldBe` fail
+
+    it "fails on partial or redundant string" $ do
+      parseWith updateConfigParser "conf color tc"
+        `shouldBe` fail
+      parseWith updateConfigParser "configg width 14"
+        `shouldBe` fail
+      parseWith updateConfigParser "config123 heigh 22"
+        `shouldBe` fail
+
+    it "fails on additional input" $ do
+      parseWith updateConfigParser "  config  color tc abc "
+        `shouldBe` fail
+
+    it "ignores whitespace on both sides" $ do
+      parseWith updateConfigParser "   config c tc w 14 h 7   "
+        `shouldBe` cmd (color TrueColor <> width 14 <> height 7) 
+
 
   describe "quitParser" $ do
     it "fails on empty string" $ do
@@ -130,4 +159,23 @@ parseWith parser str = case (parse parser "" str) of
   Right xs -> Right xs
 
 fail = Left "failed to parse"
-cmd  = Right 
+cmd  = Right
+
+
+-- | Basically this is an invalid semigroup, but for us it works as expected
+-- with the provided combinators.
+instance Semigroup Command where
+  (UpdateConfig c1 w1 h1) <> (UpdateConfig c2 w2 h2) =
+    UpdateConfig
+      (maybe c2 Just c1)
+      (maybe w2 Just w1)
+      (maybe h2 Just h1)
+
+color :: ColorScheme -> Command
+color clr = UpdateConfig (Just clr) Nothing Nothing
+
+width :: Int -> Command
+width w = UpdateConfig Nothing (Just w) Nothing
+
+height :: Int -> Command
+height h = UpdateConfig Nothing Nothing (Just h)

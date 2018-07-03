@@ -5,12 +5,14 @@ module Pymble.Telnet.Server.ClientHandler
   (
   -- *
     forkClient
+
   -- *
-  , serveClient
-  , handleClientRequests
-  , handleCommand
-  , handle
-  , readCommand
+  , handleConnectedClient
+  , processClientRequests
+
+  -- *
+  , commandHandler
+  , parsingErrorHandler
   ) where
 
 import Control.Concurrent (forkIO, ThreadId)
@@ -30,13 +32,15 @@ import Pymble.Telnet.Server.Commands
 
 -- | Forks a dedicated thread to process the connected client
 --
-forkClient :: Socket
-           -> SockAddr
-           -> AppConfig
+forkClient :: Socket        -- ^ Socket object usable to send and receive data
+                            --   on the client side
+           -> SockAddr      -- ^ Address bound to the socket on the other end
+                            --   of the connection
+           -> AppConfig     -- ^ Application configuration
            -> IO ThreadId
 forkClient sock sockAddr appConfig =
     forkIO $ do
-      (clientState, log) <- execRWST serveClient
+      (clientState, log) <- execRWST handleConnectedClient
                               (mkEnv appConfig)
                               (mkState sock sockAddr)
       -- Basically here we can save the generated log
@@ -63,11 +67,11 @@ forkClient sock sockAddr appConfig =
 -- | The main routine to handle clients
 -- connected via telnet.
 --
-serveClient :: CommandHandler ()
-serveClient = do
+handleConnectedClient :: CommandHandler ()
+handleConnectedClient = do
   writeLogStr "Connected"
 
-  handleClientRequests `finally` do
+  processClientRequests `finally` do
     -- we want to make sure that the client socket
     -- is being closed even if some unexpected exception happens
     get >>= liftIO . close . _csSocket
@@ -76,31 +80,35 @@ serveClient = do
 
 -- | The main client processing loop.
 --
-handleClientRequests :: CommandHandler ()
-handleClientRequests = void $ iterateWhile _csConnected $ do
-  readCommand >>= handleCommand
-
-  -- final ClientState is the result of our monad,
-  -- so iterateWhile can detect
-  -- when the client is disconnected
-  get
+-- The result of inner loop is current 'ClientState',
+-- so 'iterateWhile' can detect when the client becomes
+-- disconnected.
+--
+processClientRequests :: CommandHandler ()
+processClientRequests =
+    void $ iterateWhile _csConnected $ do
+      readCommand >>= handleCommand >> get
+  where
+    -- Get input from the client and parse it as 'Command'
+    readCommand = readSocket >>= lift . return . parseCommand
+    -- Handle parsing error or command
+    handleCommand = \case
+      Left err  -> parsingErrorHandler err
+      Right cmd -> commandHandler cmd
 
 
 -- |
 --
-handleCommand :: Either ParsingError Command -> CommandHandler ()
-handleCommand = \case
-  Left err  -> undefined
-  Right cmd -> handle cmd
+commandHandler :: Command -> CommandHandler ()
+commandHandler = \case
+  Help         -> helpCmd
+  ViewConfig   -> viewConfigCmd
+  UpdateConfig -> setConfigCmd
+  Render       -> renderCmd "" (RenderConfig Nothing Nothing Nothing)
+  Quit         -> exitCmd
 
 
 -- |
 --
-handle :: Command -> CommandHandler ()
-handle = undefined
-
-
--- | Get input from the client and parse it as 'Command'.
---
-readCommand :: CommandHandler (Either ParsingError Command)
-readCommand = readSocket >>= lift . return . parseCommand
+parsingErrorHandler :: ParsingError -> CommandHandler ()
+parsingErrorHandler = undefined

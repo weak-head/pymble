@@ -90,7 +90,7 @@ processClientRequests =
       readCommand >>= handleCommand >> get
   where
     -- Get input from the client and parse it as 'Command'
-    readCommand = readSocket >>= lift . return . parseCommand
+    readCommand = readSocket >>= lift . return . parseCommandBS
     -- Handle parsing error or command
     handleCommand = \case
       Left err  -> parsingErrorHandler err

@@ -9,14 +9,24 @@ module Pymble.Telnet.Api.Parser
 
   -- *
   , parseCommand
-  , parseCommandStr
+  , parseCommandBS
+
+  -- *
+  , commandParser
+  , helpParser
+
   ) where
 
 import Control.Applicative ((<|>))
 import Control.Monad
-import Data.ByteString hiding (pack)
-import Data.ByteString.Char8 (pack)
-import Text.Trifecta
+import Data.ByteString hiding (unpack)
+import Data.ByteString.Char8 (unpack)
+import Data.Void
+
+
+import Text.Megaparsec
+import Text.Megaparsec.Char
+import Text.Megaparsec.Expr
 ----------------------------------------------------------------------
 
 -- |
@@ -27,20 +37,50 @@ data Command =
   | UpdateConfig
   | Render
   | Quit
+  deriving (Show)
 
 
 -- |
 --
 type ParsingError = String
 
+-- |
+--
+type Parser = Parsec Void String
+
 
 -- |
 --
-parseCommand :: ByteString -> Either ParsingError Command
-parseCommand str = undefined
+parseCommand :: String -> Either ParsingError Command
+parseCommand str = case (parse commandParser "" str) of
+  Left err -> Left "err" 
+  Right xs -> Right xs
 
 
 -- |
 --
-parseCommandStr :: String -> Either ParsingError Command
-parseCommandStr = parseCommand . pack
+parseCommandBS :: ByteString -> Either ParsingError Command
+parseCommandBS = parseCommand . unpack
+
+
+-- |
+--
+commandParser :: Parser Command
+commandParser = helpParser
+
+
+-- |
+--
+helpParser :: Parser Command
+helpParser = 
+  word "help" >> return Help
+
+----------------------------------------------------------------------
+
+-- |
+--
+word :: String -> Parser ()
+word w = do
+  space
+  string w *> notFollowedBy alphaNumChar
+  space

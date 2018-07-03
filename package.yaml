@@ -25,6 +25,7 @@ library:
   - exceptions
   - http-conduit
   - http-types
+  - megaparsec
   - monad-loops
   - network
   - network-uri
@@ -32,7 +33,6 @@ library:
   - repa
   - time
   - transformers
-  - trifecta
   - vector
   - vector-th-unbox
 

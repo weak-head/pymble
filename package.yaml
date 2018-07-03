@@ -47,8 +47,8 @@ executables:
     dependencies:
     - pymble
     - data-default
-    - optparse-applicative
     - exceptions
+    - optparse-applicative
 
 tests:
   pymble-test:
@@ -60,7 +60,8 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - pymble
-    - hspec
     - QuickCheck
     - containers
+    - hspec
+    - megaparsec
     - optparse-applicative

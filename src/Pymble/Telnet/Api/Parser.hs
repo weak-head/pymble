@@ -3,19 +3,17 @@
 --
 module Pymble.Telnet.Api.Parser
   (
-  -- *
+  -- * Hi-level parsing API
     Command(..)
   , ParsingError
-
-  -- *
   , parseCommand
   , parseCommandBS
 
-  -- *
+  -- * Specific command parsers
   , Parser
   , commandParser
   , helpParser
-
+  , quitParser
   ) where
 
 import Control.Applicative ((<|>))
@@ -24,10 +22,8 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (unpack)
 import Data.Void
 
-
 import Text.Megaparsec
-import Text.Megaparsec.Char
-import Text.Megaparsec.Expr
+import Text.Megaparsec.Char (eol, space, string', alphaNumChar)
 ----------------------------------------------------------------------
 
 -- |
@@ -66,7 +62,9 @@ parseCommandBS = parseCommand . unpack
 -- |
 --
 commandParser :: Parser Command
-commandParser = helpParser
+commandParser =
+      helpParser
+  <|> quitParser
 
 
 -- | Parser for the 'Help' command.
@@ -75,13 +73,24 @@ helpParser :: Parser Command
 helpParser = 
   word "help" >> return Help
 
+
+-- | Parser for the 'Quit' command.
+--
+quitParser :: Parser Command
+quitParser = 
+    keyword >> eof >> return Quit
+  where
+    keyword = word "quit"
+          <|> word "exit"
+          <|> word "q"
+
 ----------------------------------------------------------------------
 
--- | Strictly match the word,
+-- | Strictly match the word (case insensitive),
 -- ignoring whitespace on both sides.
 --
 word :: String -> Parser ()
 word w = do
   space
-  string w *> notFollowedBy alphaNumChar
+  string' w *> notFollowedBy alphaNumChar
   space

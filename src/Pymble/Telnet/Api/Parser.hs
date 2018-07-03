@@ -12,6 +12,7 @@ module Pymble.Telnet.Api.Parser
   , parseCommandBS
 
   -- *
+  , Parser
   , commandParser
   , helpParser
 
@@ -19,7 +20,7 @@ module Pymble.Telnet.Api.Parser
 
 import Control.Applicative ((<|>))
 import Control.Monad
-import Data.ByteString hiding (unpack)
+import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (unpack)
 import Data.Void
 
@@ -37,8 +38,7 @@ data Command =
   | UpdateConfig
   | Render
   | Quit
-  deriving (Show)
-
+  deriving (Show, Eq)
 
 -- |
 --
@@ -53,7 +53,7 @@ type Parser = Parsec Void String
 --
 parseCommand :: String -> Either ParsingError Command
 parseCommand str = case (parse commandParser "" str) of
-  Left err -> Left "err" 
+  Left err -> Left "failed to parse" 
   Right xs -> Right xs
 
 
@@ -69,7 +69,7 @@ commandParser :: Parser Command
 commandParser = helpParser
 
 
--- |
+-- | Parser for the 'Help' command.
 --
 helpParser :: Parser Command
 helpParser = 
@@ -77,7 +77,8 @@ helpParser =
 
 ----------------------------------------------------------------------
 
--- |
+-- | Strictly match the word,
+-- ignoring whitespace on both sides.
 --
 word :: String -> Parser ()
 word w = do

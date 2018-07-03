@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Pymble.Telnet.Server.ClientHandler
   (
@@ -7,6 +8,9 @@ module Pymble.Telnet.Server.ClientHandler
   -- *
   , serveClient
   , handleClientRequests
+  , handleCommand
+  , handle
+  , readCommand
   ) where
 
 import Control.Concurrent (forkIO, ThreadId)
@@ -15,9 +19,11 @@ import Control.Monad.Catch (finally)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.Trans.RWS (execRWST, get)
+import Control.Monad.Trans.Class (lift)
 import Network.Socket (close, Socket, SockAddr)
 
 import Pymble.AppConfig
+import Pymble.Telnet.Api.Parser
 import Pymble.Telnet.Server.Commands
 ----------------------------------------------------------------------
 
@@ -72,9 +78,29 @@ serveClient = do
 --
 handleClientRequests :: CommandHandler ()
 handleClientRequests = void $ iterateWhile _csConnected $ do
-  undefined
+  readCommand >>= handleCommand
 
   -- final ClientState is the result of our monad,
   -- so iterateWhile can detect
   -- when the client is disconnected
   get
+
+
+-- |
+--
+handleCommand :: Either ParsingError Command -> CommandHandler ()
+handleCommand = \case
+  Left err  -> undefined
+  Right cmd -> handle cmd
+
+
+-- |
+--
+handle :: Command -> CommandHandler ()
+handle = undefined
+
+
+-- | Get input from the client and parse it as 'Command'.
+--
+readCommand :: CommandHandler (Either ParsingError Command)
+readCommand = readSocket >>= lift . return . parseCommand

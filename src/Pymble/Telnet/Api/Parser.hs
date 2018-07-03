@@ -13,6 +13,7 @@ module Pymble.Telnet.Api.Parser
   , Parser
   , commandParser
   , helpParser
+  , viewConfigParser
   , quitParser
   ) where
 
@@ -74,15 +75,22 @@ helpParser =
   word "help" >> return Help
 
 
+-- | Parser for the 'ViewConfig' command.
+--
+viewConfigParser :: Parser Command
+viewConfigParser =
+  word "config" >> eof >> return ViewConfig
+
+
 -- | Parser for the 'Quit' command.
 --
 quitParser :: Parser Command
 quitParser = 
     keyword >> eof >> return Quit
   where
-    keyword = word "quit"
-          <|> word "exit"
-          <|> word "q"
+    keyword = try (word "quit")
+          <|> try (word "exit")
+          <|> try (word "q")
 
 ----------------------------------------------------------------------
 

@@ -3,11 +3,11 @@
 
 module Pymble.Telnet.Api.ParserSpec where
 
+import Control.Monad (forM_)
+import Data.Semigroup
+import Prelude hiding (fail)
 import Test.Hspec
 import Test.QuickCheck
-import Prelude hiding (fail)
-
-import Data.Semigroup
 import Text.Megaparsec
 
 import Pymble.Telnet.Api.Parser
@@ -103,7 +103,57 @@ spec = do
 
     it "ignores whitespace on both sides" $ do
       parseWith updateConfigParser "   config c tc w 14 h 7   "
-        `shouldBe` cmd (color TrueColor <> width 14 <> height 7) 
+        `shouldBe` cmd (color TrueColor <> width 14 <> height 7)
+        
+    it "ignores whitespace in the middle" $ do
+      parseWith updateConfigParser "  config    color     tc    width  \t\t 28"
+        `shouldBe` cmd (color TrueColor <> width 28)
+
+    it "parses exact string" $ do
+      parseWith updateConfigParser "config color gs width 40 height 20"
+        `shouldBe` cmd (color Grayscale <> width 40 <> height 20)
+      parseWith updateConfigParser "config c 16 w 80 h 37"
+        `shouldBe` cmd (color Color16 <> width 80 <> height 37)
+
+    it "order invariant" $ do
+      parseWith updateConfigParser "config color 256 width 20 height 18"
+        `shouldBe` cmd (color Xterm256 <> width 20 <> height 18)
+      parseWith updateConfigParser "config color 256 height 18 width 20"
+        `shouldBe` cmd (color Xterm256 <> width 20 <> height 18)
+      parseWith updateConfigParser "config width 20 color 256 height 18"
+        `shouldBe` cmd (color Xterm256 <> width 20 <> height 18)
+      parseWith updateConfigParser "config height 18 width 20 color 256"
+        `shouldBe` cmd (color Xterm256 <> width 20 <> height 18)
+      parseWith updateConfigParser "config height 18 color 256 width 20"
+        `shouldBe` cmd (color Xterm256 <> width 20 <> height 18)
+
+    it "parses different kinds of color input" $ do
+      let scenarios = [ (cmd $ color Color16, "config color 16") 
+                      , (cmd $ color Color16, "config c 16")
+                      , (cmd $ color Color16, "CONFIG COLOR 16")
+                      , (cmd $ color Xterm256, "config color 256")
+                      , (cmd $ color Xterm256, "config c 256")
+                      , (cmd $ color Xterm256, "COnfIG CoLoR 256")
+                      , (cmd $ color Grayscale, "config color gs")
+                      , (cmd $ color Grayscale, "config color grayscale")
+                      , (cmd $ color Grayscale, "config color GRAYSCALE")
+                      , (cmd $ color TrueColor, "config color tc")
+                      , (cmd $ color TrueColor, "config color TrueColor")
+                      ] 
+      forM_ scenarios $ \(expectation, input) ->
+        parseWith updateConfigParser input `shouldBe` expectation
+
+    it "parses singleton width" $ do
+      parseWith updateConfigParser "config width 14"
+        `shouldBe` cmd (width 14)
+      parseWith updateConfigParser "config w 28"
+        `shouldBe` cmd (width 28)
+
+    it "parses singleton height" $ do
+      parseWith updateConfigParser "config height 33"
+        `shouldBe` cmd (height 33)
+      parseWith updateConfigParser "config h 77"
+        `shouldBe` cmd (height 77)
 
 
   describe "quitParser" $ do

@@ -9,7 +9,7 @@ module Pymble.Telnet.Api.Parser
   , parseCommand
   , parseCommandBS
 
-  -- * Specific command parsers
+  -- * Command parsers
   , Parser
   , commandParser
   , helpParser
@@ -17,15 +17,11 @@ module Pymble.Telnet.Api.Parser
   , updateConfigParser
   , quitParser
 
-  -- * Parser helpers
+  -- * Parser combinators
   , configSettingsParser
   , colorSchemeParser
   , widthParser
   , heightParser
-
-  -- * Combinators
-  , word
-  , number
   ) where
 
 import Control.Applicative ((<|>))
@@ -35,9 +31,9 @@ import Data.ByteString.Char8 (unpack)
 import Data.Void
 
 import Text.Megaparsec
-import Text.Megaparsec.Char (eol, space, string', alphaNumChar)
-import Text.Megaparsec.Perm
+import Text.Megaparsec.Char (space, string', alphaNumChar)
 import Text.Megaparsec.Char.Lexer (decimal)
+import Text.Megaparsec.Perm
 
 import Pymble.PrettyPrint.Terminal (ColorScheme(..))
 
@@ -133,7 +129,7 @@ quitParser =
 
 ----------------------------------------------------------------------
 
--- |
+-- | 'ConfigSettings' parser.
 --
 configSettingsParser :: Parser ConfigSettings
 configSettingsParser =
@@ -143,7 +139,7 @@ configSettingsParser =
     <|?> (Nothing, Just <$> heightParser)) 
 
 
--- |
+-- | Parser for the ASCII art 'ColorScheme'.
 --
 colorSchemeParser :: Parser ColorScheme
 colorSchemeParser = do
@@ -159,11 +155,11 @@ colorSchemeParser = do
     
     c16  = word "16"  >> return Color16
     c256 = word "256" >> return Xterm256
-    gs   = word "gs"  >> return Grayscale
-    tc   = word "tc"  >> return TrueColor
+    gs   = (try (word "gs") <|> try (word "grayscale")) >> return Grayscale
+    tc   = (try (word "tc") <|> try (word "truecolor")) >> return TrueColor
 
 
--- |
+-- | Parser for the ASCII art width.
 --
 widthParser :: Parser Int
 widthParser =
@@ -173,7 +169,7 @@ widthParser =
           <|> try (word "w")
 
 
--- |
+-- | Parser for the ASCII art height.
 --
 heightParser :: Parser Int
 heightParser =

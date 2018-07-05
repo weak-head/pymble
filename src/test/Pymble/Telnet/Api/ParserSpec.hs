@@ -210,6 +210,23 @@ spec = do
       forM_ uris $ \uri ->
         parseWith renderParser ("render " ++ uri) `shouldBe` url' uri
 
+    it "parses wrapped URIs" $ do
+      parseWith renderParser " render  \"http://google.com\"  "
+        `shouldBe` url' "http://google.com"
+      parseWith renderParser " render  \'http://google.com\'  "
+        `shouldBe` url' "http://google.com"
+      parseWith renderParser " render  \"http://google.com  "
+        `shouldBe` fail
+      parseWith renderParser " render  http://google.com\"  "
+        `shouldBe` fail
+      parseWith renderParser " render  \'http://google.com\"  "
+        `shouldBe` fail
+      parseWith renderParser " render  \"http://google.com\'  "
+        `shouldBe` fail
+      parseWith renderParser " render  \"http://google .com\"  "
+        `shouldBe` fail
+
+
   describe "quitParser" $ do
     it "fails on empty string" $ do
       parseWith quitParser ""

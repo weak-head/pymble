@@ -178,6 +178,8 @@ spec = do
         `shouldBe` fail
       parseWith renderParser "render c 256"
         `shouldBe` fail
+      parseWith renderParser "r c truecolor"
+        `shouldBe` fail
 
     it "ignores whitespace on both sides" $ do
       parseWith renderParser " \t render https://google.com   "
@@ -187,6 +189,26 @@ spec = do
       parseWith renderParser "  render     \t\t http://some.url.com:8282/img.png   "
         `shouldBe` url' "http://some.url.com:8282/img.png"
 
+    it "parses complex URIs" $ do
+      let uris = [ "ftp://ftp.is.co.za/rfc/rfc1808.txt?ff=dd%fd=kd"
+                 , "http://www.ietf.org/rfc/rfc2396.txt"
+                 , "ldap://[2001:db8::7]/c=GB?objectClass?one"
+                 , "news:comp.infosystems.www.servers.unix"
+                 , "tel:+1-816-555-1212"
+                 , "telnet://192.0.2.16:80/"
+                 , "urn:oasis:names:specification:docbook:dtd:xml:4.1.2"
+                 , "http://www.google.com"
+                 , "http://foo:bar@w1.superman.com/very/long/path.html?p1=v1&p2=v2#more-details"
+                 , "https://secured.com:443"
+                 , "ftp://ftp.bogus.com/~some/path/to/a/file.txt"
+                 , "http://www.foo.bar/segment1/segment2/some-resource.html"
+                 , "http://www.foo.bar/image-2.html?w=100&h=50"
+                 , "ftp://ftp.foo.bar/~john/doe?w=100&h=50"
+                 , "http://www.foo.bar/image.jpg?height=150&width=100"
+                 , "https://www.secured.com:443/resource.html?id=6e8bc430-9c3a-11d9-9669-0800200c9a66#some-header"
+                 ]
+      forM_ uris $ \uri ->
+        parseWith renderParser ("render " ++ uri) `shouldBe` url' uri
 
   describe "quitParser" $ do
     it "fails on empty string" $ do

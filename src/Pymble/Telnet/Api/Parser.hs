@@ -34,7 +34,7 @@ import Data.Void
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer (decimal)
+import Text.Megaparsec.Char.Lexer (decimal, symbol)
 import Text.Megaparsec.Perm
 
 import Pymble.PrettyPrint.Terminal (ColorScheme(..))
@@ -207,13 +207,25 @@ heightParser =
 uri :: Parser String
 uri = do
     space
-    u <- some urlChar
+    u <- someUrl
     space
     return u
   where
-    urlChar = try letterChar
-          <|> try alphaNumChar
-          <|> try punctuationChar 
+    someUrl = try (wrap "\'" urlStr)
+          <|> try (wrap "\"" urlStr)
+          <|> try urlStr
+
+    urlStr = some ( try letterChar
+                <|> try alphaNumChar
+                <|> try urlChar )
+   
+    urlChar = oneOf ("%-+/;?~:.,#&@=[]" :: String)
+
+-- | Parses wrapped parser.
+wrap :: String
+     -> Parser a
+     -> Parser a
+wrap p = between (string p) (string p)
 
 
 -- | Strictly match the word (case insensitive),

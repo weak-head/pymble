@@ -104,7 +104,7 @@ commandHandler = \case
     Help            -> helpCmd
     ViewConfig      -> viewConfigCmd
     UpdateConfig rs -> setConfigCmd $ toRc rs
-    Render          -> renderCmd "" (RenderConfig Nothing Nothing Nothing)
+    Render rs url   -> renderCmd url (toRc rs)
     Quit            -> exitCmd
   where
     toRc (RenderSettings c w h) = RenderConfig c w h

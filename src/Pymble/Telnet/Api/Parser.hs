@@ -16,9 +16,10 @@ module Pymble.Telnet.Api.Parser
   , helpParser
   , viewConfigParser
   , updateConfigParser
+  , renderParser
   , quitParser
 
-  -- * Parser combinators
+  -- * Parser helpers
   , renderSettingsParser
   , colorSchemeParser
   , widthParser
@@ -32,7 +33,7 @@ import Data.ByteString.Char8 (unpack)
 import Data.Void
 
 import Text.Megaparsec
-import Text.Megaparsec.Char (space, string', alphaNumChar)
+import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer (decimal)
 import Text.Megaparsec.Perm
 
@@ -47,7 +48,7 @@ data Command =
     Help
   | ViewConfig
   | UpdateConfig RenderSettings
-  | Render
+  | Render RenderSettings Url
   | Quit
   deriving (Show, Eq)
 
@@ -58,6 +59,10 @@ data RenderSettings = RenderSettings {
   , _csWidth  :: Maybe Int            -- ^ ASCII art width (in characters)
   , _csHeight :: Maybe Int            -- ^ ASCII art height (in characters)
   } deriving (Eq, Show)
+
+-- |
+--
+type Url = String
 
 -- |
 --
@@ -88,6 +93,7 @@ commandParser =
       try helpParser
   <|> try viewConfigParser
   <|> try updateConfigParser
+  <|> try renderParser
   <|> try quitParser
 
 
@@ -117,6 +123,20 @@ updateConfigParser = do
     validate (RenderSettings Nothing Nothing Nothing) =
       fail "Explicit configuration settings are expected"
     validate cs = return cs
+
+
+-- | Parser for the 'Render' command.
+--
+renderParser :: Parser Command
+renderParser = do
+    keyword
+    rs  <- renderSettingsParser
+    url <- uri
+    eof
+    return $ Render rs url
+  where
+    keyword = try (word "render")
+          <|> try (word "r")
 
 
 -- | Parser for the 'Quit' command.
@@ -181,6 +201,20 @@ heightParser =
           <|> try (word "h")
 
 ----------------------------------------------------------------------
+
+-- | Parses URI.
+--
+uri :: Parser String
+uri = do
+    space
+    u <- some urlChar
+    space
+    return u
+  where
+    urlChar = try letterChar
+          <|> try alphaNumChar
+          <|> try punctuationChar 
+
 
 -- | Strictly match the word (case insensitive),
 -- ignoring whitespace on both sides.

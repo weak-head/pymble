@@ -12,7 +12,7 @@ module Pymble.Telnet.Server.ClientHandler
 
   -- *
   , commandHandler
-  , parsingErrorHandler
+  , requestForActionHandler
   ) where
 
 import Control.Concurrent (forkIO, ThreadId)
@@ -96,10 +96,10 @@ processClientRequests =
     -- Get input from the client and parse it as 'Command'
     readCommand = readSocket >>= lift . return . parseCommandBS
 
-    -- Handle parsing error or command
+    -- Handle action request or pymble command
     handleCommand = \case
-      Left err  -> parsingErrorHandler err
-      Right cmd -> commandHandler cmd
+      Left action -> requestForActionHandler action
+      Right cmd   -> commandHandler cmd
 
 
 -- |
@@ -118,7 +118,10 @@ commandHandler = \case
 
 -- |
 --
-parsingErrorHandler :: ParsingError -> CommandHandler ()
-parsingErrorHandler err = do
-  writeSocket $ termMsg' Error err
+requestForActionHandler :: RequestForAction -> CommandHandler ()
+requestForActionHandler NoInput = return ()
+requestForActionHandler (UnknownCommand input errorMsg) = do
+  writeSocket $ termMsg' Error "Failed to parse the input"
   helpCmd
+requestForActionHandler (TelnetControl controlSequence) = do
+  return ()

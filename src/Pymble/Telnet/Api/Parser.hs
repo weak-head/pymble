@@ -6,7 +6,10 @@ module Pymble.Telnet.Api.Parser
   -- * Hi-level parsing API
     Command(..)
   , RenderSettings(..)
-  , ParsingError
+  , RequestForAction(..)
+  , Url
+  , Input
+  , ErrorInfo
   , parseCommand
   , parseCommandBS
 
@@ -29,8 +32,9 @@ module Pymble.Telnet.Api.Parser
 import Control.Applicative ((<|>))
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (unpack)
-import Data.Void
+import Data.Char (ord)
 import Data.String.Utils (strip)
+import Data.Void
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -38,7 +42,6 @@ import Text.Megaparsec.Char.Lexer (decimal, symbol)
 import Text.Megaparsec.Perm
 
 import Pymble.PrettyPrint.Terminal (ColorScheme(..))
-
 ----------------------------------------------------------------------
 
 -- | This data model defines the command API
@@ -61,34 +64,51 @@ data RenderSettings = RenderSettings {
   } deriving (Eq, Show)
 
 -- | Image URL.
---
 type Url = String
 
--- | Parsing error details.
+-- | Request for action is basically everything that is not a
+-- a pymble command and requires some action from server, client
+-- or terminal itself. 
 --
-type ParsingError = String
+data RequestForAction 
+  = NoInput                         -- ^ Input is whitespace string or empty 
+  | UnknownCommand Input ErrorInfo  -- ^ The command is unknown or incorrectly formatted
+  | TelnetControl [Int]             -- ^ Telnet control sequence
+  deriving (Show)
+
+-- | User input, as-is.
+type Input     = String
+
+-- | Error hint or detailed info.
+type ErrorInfo = String
 
 -- | The parser type shortcut.
---
 type Parser = Parsec Void String
 
--- | Parses the provided pymble telnet command and returns
+------------------------------
+
+-- | Parses the pymble telnet command and returns
 -- either 'Command' object or the reason of the parsing failure.
 --
-parseCommand :: String -> Either ParsingError Command
-parseCommand str =
-  let cleanStr = strip str
-  in if null cleanStr
-      then Left "no input"
-      else case (parse commandParser "" cleanStr) of
-            Left err -> Left "failed to parse" 
-            Right xs -> Right xs
+parseCommand :: String -> Either RequestForAction Command
+parseCommand str
+    | noInput         str = Left $ NoInput 
+    | isTelnetControl str = Left $ TelnetControl (ord <$> str)
+    | otherwise =
+        case (parse commandParser "" (strip str)) of
+          Left err -> Left $ UnknownCommand str (show err)
+          Right xs -> Right xs
+  where
+    noInput         = null . strip
+    -- RFC-854, RFC-855
+    -- http://mars.netanya.ac.il/~unesco/cdrom/booklet/HTML/NETWORKING/node300.html
+    isTelnetControl = ((==) 255) . ord . head
 
 
--- | Parses the provided pymble telnet command that is represented as 'ByteString'
+-- | Parses the pymble telnet command that is represented as 'ByteString'
 -- and returns either 'Command' object or the reason of the parsing failure.
 --
-parseCommandBS :: ByteString -> Either ParsingError Command
+parseCommandBS :: ByteString -> Either RequestForAction Command
 parseCommandBS = parseCommand . unpack
 
 

@@ -94,13 +94,16 @@ viewConfigCmd = undefined
 
 -- |
 --
-setConfigCmd :: CommandHandler ()
+setConfigCmd :: RenderConfig
+             -> CommandHandler ()
 setConfigCmd = undefined
 
 
 -- |
 --
-renderCmd :: String -> RenderConfig -> CommandHandler ()
+renderCmd :: String
+          -> RenderConfig
+          -> CommandHandler ()
 renderCmd url config = undefined
 
 

@@ -215,17 +215,17 @@ cmd  = Right
 -- | Basically this is an invalid semigroup, but for us it works as expected
 -- with the provided combinators.
 instance Semigroup Command where
-  (UpdateConfig c1 w1 h1) <> (UpdateConfig c2 w2 h2) =
-    UpdateConfig
+  (UpdateConfig (RenderSettings c1 w1 h1)) <> (UpdateConfig (RenderSettings c2 w2 h2)) =
+    UpdateConfig $ RenderSettings
       (maybe c2 Just c1)
       (maybe w2 Just w1)
       (maybe h2 Just h1)
 
 color :: ColorScheme -> Command
-color clr = UpdateConfig (Just clr) Nothing Nothing
+color clr = UpdateConfig $ RenderSettings (Just clr) Nothing Nothing
 
 width :: Int -> Command
-width w = UpdateConfig Nothing (Just w) Nothing
+width w = UpdateConfig $ RenderSettings Nothing (Just w) Nothing
 
 height :: Int -> Command
-height h = UpdateConfig Nothing Nothing (Just h)
+height h = UpdateConfig $ RenderSettings Nothing Nothing (Just h)

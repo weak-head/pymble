@@ -5,6 +5,7 @@ module Pymble.Telnet.Api.Parser
   (
   -- * Hi-level parsing API
     Command(..)
+  , RenderSettings(..)
   , ParsingError
   , parseCommand
   , parseCommandBS
@@ -18,7 +19,7 @@ module Pymble.Telnet.Api.Parser
   , quitParser
 
   -- * Parser combinators
-  , configSettingsParser
+  , renderSettingsParser
   , colorSchemeParser
   , widthParser
   , heightParser
@@ -39,15 +40,24 @@ import Pymble.PrettyPrint.Terminal (ColorScheme(..))
 
 ----------------------------------------------------------------------
 
--- |
+-- | This data model defines the command API
+-- between a telnet client and the pymble server.
 --
 data Command =
     Help
   | ViewConfig
-  | UpdateConfig (Maybe ColorScheme) (Maybe Int) (Maybe Int)
+  | UpdateConfig RenderSettings
   | Render
   | Quit
   deriving (Show, Eq)
+
+-- | The ASCII art renderer settings.
+--
+data RenderSettings = RenderSettings {
+    _csColor  :: Maybe ColorScheme    -- ^ ASCII art color scheme
+  , _csWidth  :: Maybe Int            -- ^ ASCII art width (in characters)
+  , _csHeight :: Maybe Int            -- ^ ASCII art height (in characters)
+  } deriving (Eq, Show)
 
 -- |
 --
@@ -56,14 +66,6 @@ type ParsingError = String
 -- |
 --
 type Parser = Parsec Void String
-
--- |
---
-data ConfigSettings = ConfigSettings {
-    _csColor  :: Maybe ColorScheme
-  , _csWidth  :: Maybe Int
-  , _csHeight :: Maybe Int
-  } deriving (Eq, Show)
 
 -- |
 --
@@ -108,11 +110,11 @@ viewConfigParser =
 updateConfigParser :: Parser Command
 updateConfigParser = do
     word "config"
-    (ConfigSettings c w h) <- configSettingsParser >>= validate
+    rs <- renderSettingsParser >>= validate
     eof
-    return $ UpdateConfig c w h
+    return $ UpdateConfig rs 
   where
-    validate (ConfigSettings Nothing Nothing Nothing) =
+    validate (RenderSettings Nothing Nothing Nothing) =
       fail "Explicit configuration settings are expected"
     validate cs = return cs
 
@@ -129,11 +131,11 @@ quitParser =
 
 ----------------------------------------------------------------------
 
--- | 'ConfigSettings' parser.
+-- | 'RenderSettings' parser.
 --
-configSettingsParser :: Parser ConfigSettings
-configSettingsParser =
-  makePermParser (ConfigSettings
+renderSettingsParser :: Parser RenderSettings
+renderSettingsParser =
+  makePermParser (RenderSettings
     <$?> (Nothing, Just <$> colorSchemeParser)
     <|?> (Nothing, Just <$> widthParser)
     <|?> (Nothing, Just <$> heightParser)) 

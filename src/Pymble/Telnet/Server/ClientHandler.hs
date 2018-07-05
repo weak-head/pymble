@@ -101,11 +101,14 @@ processClientRequests =
 --
 commandHandler :: Command -> CommandHandler ()
 commandHandler = \case
-  Help               -> helpCmd
-  ViewConfig         -> viewConfigCmd
-  UpdateConfig c w h -> setConfigCmd
-  Render             -> renderCmd "" (RenderConfig Nothing Nothing Nothing)
-  Quit               -> exitCmd
+    Help            -> helpCmd
+    ViewConfig      -> viewConfigCmd
+    UpdateConfig rs -> setConfigCmd $ toRc rs
+    Render          -> renderCmd "" (RenderConfig Nothing Nothing Nothing)
+    Quit            -> exitCmd
+  where
+    toRc (RenderSettings c w h) = RenderConfig c w h
+
 
 
 -- |

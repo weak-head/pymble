@@ -60,19 +60,20 @@ data RenderSettings = RenderSettings {
   , _csHeight :: Maybe Int            -- ^ ASCII art height (in characters)
   } deriving (Eq, Show)
 
--- |
+-- | Image URL.
 --
 type Url = String
 
--- |
+-- | Parsing error details.
 --
 type ParsingError = String
 
--- |
+-- | The parser type shortcut.
 --
 type Parser = Parsec Void String
 
--- |
+-- | Parses the provided pymble telnet command and returns
+-- either 'Command' object or the reason of the parsing failure.
 --
 parseCommand :: String -> Either ParsingError Command
 parseCommand str = case (parse commandParser "" str) of
@@ -80,13 +81,14 @@ parseCommand str = case (parse commandParser "" str) of
   Right xs -> Right xs
 
 
--- |
+-- | Parses the provided pymble telnet command that is represented as 'ByteString'
+-- and returns either 'Command' object or the reason of the parsing failure.
 --
 parseCommandBS :: ByteString -> Either ParsingError Command
 parseCommandBS = parseCommand . unpack
 
 
--- |
+-- | Parser for the 'Command' api.
 --
 commandParser :: Parser Command
 commandParser =
@@ -220,6 +222,7 @@ uri = do
                 <|> try urlChar )
    
     urlChar = oneOf ("%-+/;?~:.,#&@=[]" :: String)
+
 
 -- | Parses wrapped parser.
 wrap :: String

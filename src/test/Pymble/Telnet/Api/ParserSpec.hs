@@ -226,6 +226,47 @@ spec = do
       parseWith renderParser " render  \"http://google .com\"  "
         `shouldBe` fail
 
+    it "case insensitive" $ do
+      parseWith renderParser " ReNdER ColOR TrueColor http://server.url  "
+        `shouldBe` (url "http://server.url" $ color TrueColor)
+
+    it "order invariant" $ do
+      let expectation = url "http://some.url" 
+                          $ color TrueColor 
+                         <> width 44
+                         <> height 33
+          scenarios = [ "render c tc w 44 h 33 http://some.url" 
+                      , "render w 44 c tc h 33 http://some.url" 
+                      , "render w 44 h 33 c tc http://some.url"
+                      , "render c tc h 33 w 44 http://some.url"
+                      , "render h 33 c tc w 44 http://some.url"
+                      , "render h 33 w 44 c tc http://some.url"
+                      ]
+      forM_ scenarios $ \scenario ->
+        parseWith renderParser scenario `shouldBe` expectation
+
+    it "parses singleton url" $ do
+      parseWith renderParser "r http://img.png"
+        `shouldBe` url' "http://img.png"
+
+    it "parses url with color" $ do
+      parseWith renderParser "r c tc http://img.png"
+        `shouldBe` (url "http://img.png" $ color TrueColor)
+      parseWith renderParser "render color TrueColor http://img.png"
+        `shouldBe` (url "http://img.png" $ color TrueColor)
+
+    it "parses url with width" $ do
+      parseWith renderParser "r w 44 http://img.png"
+        `shouldBe` (url "http://img.png" $ width 44)
+      parseWith renderParser "render width 33 http://url.com"
+        `shouldBe` (url "http://url.com" $ width 33)
+
+    it "parses url with height" $ do
+      parseWith renderParser "r h 23 http://img.png"
+        `shouldBe` (url "http://img.png" $ height 23)
+      parseWith renderParser "render height 77 https://gog.com/img.png"
+        `shouldBe` (url "https://gog.com/img.png" $ height 77)
+
 
   describe "quitParser" $ do
     it "fails on empty string" $ do

@@ -61,6 +61,7 @@ tests:
     dependencies:
     - pymble
     - QuickCheck
+    - bytestring
     - containers
     - hspec
     - megaparsec

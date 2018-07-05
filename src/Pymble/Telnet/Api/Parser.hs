@@ -27,7 +27,6 @@ module Pymble.Telnet.Api.Parser
   ) where
 
 import Control.Applicative ((<|>))
-import Control.Monad
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (unpack)
 import Data.Void

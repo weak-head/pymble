@@ -10,6 +10,8 @@ import Test.Hspec
 import Test.QuickCheck
 import Text.Megaparsec
 
+import Data.ByteString.Char8 (pack)
+
 import Pymble.Telnet.Api.Parser
 import Pymble.PrettyPrint.Terminal
 ----------------------------------------------------------------------
@@ -94,7 +96,7 @@ spec = do
         `shouldBe` fail
       parseWith updateConfigParser "configg width 14"
         `shouldBe` fail
-      parseWith updateConfigParser "config123 heigh 22"
+      parseWith updateConfigParser "config123 height 22"
         `shouldBe` fail
 
     it "fails on additional input" $ do
@@ -309,6 +311,68 @@ spec = do
       parseWith quitParser "  QUIT "
         `shouldBe` cmd Quit
       parseWith quitParser " ExIt  "
+        `shouldBe` cmd Quit
+
+  describe "parseCommand" $ do
+    it "parses help" $ do
+      parseCommand "  help  "
+        `shouldBe` cmd Help
+      parseCommand "  help  config  "
+        `shouldBe` cmd Help
+    
+    it "parses view config" $ do
+      parseCommand " config  "
+        `shouldBe` cmd ViewConfig
+      parseCommand " CONfig  ff"
+        `shouldBe` fail
+
+    it "parses update config" $ do
+      parseCommand " config c 256 h 44"
+        `shouldBe` ccmd (color Xterm256 <> height 44)
+      parseCommand " config w 22"
+        `shouldBe` ccmd (width 22)
+
+    it "parses render" $ do
+      parseCommand " render h 22 http://img.url "
+        `shouldBe` (url "http://img.url" $ height 22)
+      parseCommand " r img"
+        `shouldBe` url' "img"
+
+    it "parses quit" $ do
+      parseCommand " quit "
+        `shouldBe` cmd Quit
+      parseCommand " q "
+        `shouldBe` cmd Quit
+  
+  describe "parseCommandBS" $ do
+    it "parses help" $ do
+      parseCommandBS (pack "  help  ")
+        `shouldBe` cmd Help
+      parseCommandBS (pack "  help  render  ")
+        `shouldBe` cmd Help
+    
+    it "parses view config" $ do
+      parseCommandBS (pack " config  ")
+        `shouldBe` cmd ViewConfig
+      parseCommandBS (pack " CONFIG  gsg")
+        `shouldBe` fail
+
+    it "parses update config" $ do
+      parseCommandBS (pack " config c 16 h 44")
+        `shouldBe` ccmd (color Color16 <> height 44)
+      parseCommandBS (pack " config w 22")
+        `shouldBe` ccmd (width 22)
+
+    it "parses render" $ do
+      parseCommandBS (pack " render h 26 http://img.url ")
+        `shouldBe` (url "http://img.url" $ height 26)
+      parseCommandBS (pack " r \t\t img")
+        `shouldBe` url' "img"
+
+    it "parses quit" $ do
+      parseCommandBS (pack " quit ")
+        `shouldBe` cmd Quit
+      parseCommandBS (pack " q ")
         `shouldBe` cmd Quit
 
 

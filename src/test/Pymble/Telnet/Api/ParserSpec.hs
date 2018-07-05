@@ -314,76 +314,76 @@ spec = do
       parseWith quitParser " ExIt  "
         `shouldBe` cmd Quit
 
-  describe "parseCommand" $ do
+  describe "parseAction" $ do
     it "parses help" $ do
-      parseCommand "  help  "
+      parseAction "  help  "
         `shouldBe` cmd Help
-      parseCommand "  help  config  "
+      parseAction "  help  config  "
         `shouldBe` cmd Help
     
     it "parses view config" $ do
-      parseCommand " config  "
+      parseAction " config  "
         `shouldBe` cmd ViewConfig
-      parseCommand " CONfig  ff"
+      parseAction " CONfig  ff"
         `shouldBe` fail
 
     it "parses update config" $ do
-      parseCommand " config c 256 h 44"
+      parseAction " config c 256 h 44"
         `shouldBe` ccmd (color Xterm256 <> height 44)
-      parseCommand " config w 22"
+      parseAction " config w 22"
         `shouldBe` ccmd (width 22)
 
     it "parses render" $ do
-      parseCommand " render h 22 http://img.url "
+      parseAction " render h 22 http://img.url "
         `shouldBe` (url "http://img.url" $ height 22)
-      parseCommand " r img"
+      parseAction " r img"
         `shouldBe` url' "img"
 
     it "parses quit" $ do
-      parseCommand " quit "
+      parseAction " quit "
         `shouldBe` cmd Quit
-      parseCommand " q "
+      parseAction " q "
         `shouldBe` cmd Quit
   
-  describe "parseCommandBS" $ do
+  describe "parseActionBS" $ do
     it "parses help" $ do
-      parseCommandBS (pack "  help  ")
+      parseActionBS (pack "  help  ")
         `shouldBe` cmd Help
-      parseCommandBS (pack "  help  render  ")
+      parseActionBS (pack "  help  render  ")
         `shouldBe` cmd Help
     
     it "parses view config" $ do
-      parseCommandBS (pack " config  ")
+      parseActionBS (pack " config  ")
         `shouldBe` cmd ViewConfig
-      parseCommandBS (pack " CONFIG  gsg")
+      parseActionBS (pack " CONFIG  gsg")
         `shouldBe` fail
 
     it "parses update config" $ do
-      parseCommandBS (pack " config c 16 h 44")
+      parseActionBS (pack " config c 16 h 44")
         `shouldBe` ccmd (color Color16 <> height 44)
-      parseCommandBS (pack " config w 22")
+      parseActionBS (pack " config w 22")
         `shouldBe` ccmd (width 22)
 
     it "parses render" $ do
-      parseCommandBS (pack " render h 26 http://img.url ")
+      parseActionBS (pack " render h 26 http://img.url ")
         `shouldBe` (url "http://img.url" $ height 26)
-      parseCommandBS (pack " r \t\t img")
+      parseActionBS (pack " r \t\t img")
         `shouldBe` url' "img"
 
     it "parses quit" $ do
-      parseCommandBS (pack " quit ")
+      parseActionBS (pack " quit ")
         `shouldBe` cmd Quit
-      parseCommandBS (pack " q ")
+      parseActionBS (pack " q ")
         `shouldBe` cmd Quit
 
 
 ------------------------------
 
 
-parseWith :: Parser a -> String -> Either RequestForAction a
+parseWith :: Parser Command -> String -> RequestForAction
 parseWith parser str = case (parse parser "" str) of
   Left err -> fail
-  Right xs -> Right xs
+  Right xs -> PymbleCommand xs
 
 -- | No make our test cases pass, by ignoring the specific
 -- input and error messages.
@@ -391,12 +391,13 @@ instance Eq RequestForAction where
   NoInput              == NoInput              = True
   (UnknownCommand _ _) == (UnknownCommand _ _) = True
   (TelnetControl _)    == (TelnetControl _)    = True
+  (PymbleCommand a)    == (PymbleCommand b)    = a == b
   _                    ==  _                   = False
 
-fail   = Left (UnknownCommand "" "")
-failNI = Left NoInput
+fail   = UnknownCommand "" ""
+failNI = NoInput
 
-cmd  = Right
+cmd  = PymbleCommand
 ccmd = cmd . UpdateConfig
 
 
@@ -424,8 +425,8 @@ width w = RenderSettings Nothing (Just w) Nothing
 height :: Int -> RenderSettings
 height h = RenderSettings Nothing Nothing (Just h)
 
-url :: String -> RenderSettings -> Either a Command
+url :: String -> RenderSettings -> RequestForAction
 url u rs = cmd $ Render rs u
 
-url' :: String -> Either a Command
+url' :: String -> RequestForAction
 url' u = url u (RenderSettings Nothing Nothing Nothing)

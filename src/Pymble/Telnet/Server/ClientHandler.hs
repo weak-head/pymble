@@ -7,12 +7,12 @@ module Pymble.Telnet.Server.ClientHandler
     forkClient
 
   -- *
-  , handleConnectedClient
-  , processClientRequests
+  , handleNewClient
+  , handleRequests
 
   -- *
-  , commandHandler
-  , requestForActionHandler
+  , handleAction
+  , handleCommand
   ) where
 
 import Control.Concurrent (forkIO, ThreadId)
@@ -41,7 +41,7 @@ forkClient :: Socket        -- ^ Socket object usable to send and receive data
            -> IO ThreadId
 forkClient sock sockAddr appConfig =
     forkIO $ do
-      (clientState, log) <- execRWST handleConnectedClient
+      (clientState, log) <- execRWST handleNewClient
                               (mkEnv appConfig)
                               (mkState sock sockAddr)
       -- Basically here we can save the generated log
@@ -68,11 +68,11 @@ forkClient sock sockAddr appConfig =
 -- | The main routine to handle clients
 -- connected via telnet.
 --
-handleConnectedClient :: CommandHandler ()
-handleConnectedClient = do
+handleNewClient :: CommandHandler ()
+handleNewClient = do
   writeLogStr "Connected"
 
-  processClientRequests `finally` do
+  handleRequests `finally` do
     -- we want to make sure that the client socket
     -- is being closed even if some unexpected exception happens
     get >>= liftIO . close . _csSocket
@@ -85,27 +85,39 @@ handleConnectedClient = do
 -- so 'iterateWhile' can detect when the client becomes
 -- disconnected.
 --
-processClientRequests :: CommandHandler ()
-processClientRequests =
+handleRequests :: CommandHandler ()
+handleRequests =
     void $ iterateWhile _csConnected $ do
-      prompt >> readCommand >>= handleCommand >> get
+      prompt
+      readAction >>= handleAction
+      newLine >> get
   where
     -- Terminal prompt
-    prompt = writeSocket $ termMsg' Success "> "
+    prompt = writeSocket $ termMsg Success "> "
 
     -- Get input from the client and parse it as 'Command'
-    readCommand = readSocket >>= lift . return . parseCommandBS
+    readAction = readSocket >>= lift . return . parseActionBS
 
-    -- Handle action request or pymble command
-    handleCommand = \case
-      Left action -> requestForActionHandler action
-      Right cmd   -> commandHandler cmd
+    newLine = writeSocketStr "\r\n"
 
 
 -- |
 --
-commandHandler :: Command -> CommandHandler ()
-commandHandler = \case
+handleAction :: RequestForAction -> CommandHandler ()
+handleAction = \case
+  NoInput -> return ()
+  CRLF    -> return ()
+  UnknownCommand input errorMsg -> do
+    writeSocket $ termMsg' Error "Failed to parse the input"
+    helpCmd
+  PymbleCommand cmd -> handleCommand cmd
+  TelnetControl controlSequence -> return ()
+
+
+-- |
+--
+handleCommand :: Command -> CommandHandler ()
+handleCommand = \case
     Help            -> helpCmd
     ViewConfig      -> viewConfigCmd
     UpdateConfig rs -> setConfigCmd $ toRc rs
@@ -114,14 +126,3 @@ commandHandler = \case
   where
     toRc (RenderSettings c w h) = RenderConfig c w h
 
-
-
--- |
---
-requestForActionHandler :: RequestForAction -> CommandHandler ()
-requestForActionHandler NoInput = return ()
-requestForActionHandler (UnknownCommand input errorMsg) = do
-  writeSocket $ termMsg' Error "Failed to parse the input"
-  helpCmd
-requestForActionHandler (TelnetControl controlSequence) = do
-  return ()

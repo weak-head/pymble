@@ -4,14 +4,14 @@
 module Pymble.Telnet.Api.Parser
   (
   -- * Hi-level parsing API
-    Command(..)
+    RequestForAction(..)
+  , Command(..)
   , RenderSettings(..)
-  , RequestForAction(..)
   , Url
   , Input
   , ErrorInfo
-  , parseCommand
-  , parseCommandBS
+  , parseAction
+  , parseActionBS
 
   -- * Command parsers
   , Parser
@@ -22,7 +22,7 @@ module Pymble.Telnet.Api.Parser
   , renderParser
   , quitParser
 
-  -- * Parser helpers
+  -- * Command parser helpers
   , renderSettingsParser
   , colorSchemeParser
   , widthParser
@@ -43,6 +43,18 @@ import Text.Megaparsec.Perm
 
 import Pymble.PrettyPrint.Terminal (ColorScheme(..))
 ----------------------------------------------------------------------
+
+-- | Request for action is basically any action that is
+-- required or could be taken by the pymble server, telnet client
+-- or terminal itself. 
+--
+data RequestForAction 
+  = NoInput                         -- ^ Input is whitespace string or empty
+  | CRLF                            -- ^ Carriage return & Line feed
+  | PymbleCommand Command
+  | UnknownCommand Input ErrorInfo  -- ^ The command is unknown or incorrectly formatted
+  | TelnetControl [Int]             -- ^ Telnet control sequence
+  deriving (Show)
 
 -- | This data model defines the command API
 -- between a telnet client and the pymble server.
@@ -66,23 +78,13 @@ data RenderSettings = RenderSettings {
 -- | Image URL.
 type Url = String
 
--- | Request for action is basically everything that is not a
--- a pymble command and requires some action from server, client
--- or terminal itself. 
---
-data RequestForAction 
-  = NoInput                         -- ^ Input is whitespace string or empty 
-  | UnknownCommand Input ErrorInfo  -- ^ The command is unknown or incorrectly formatted
-  | TelnetControl [Int]             -- ^ Telnet control sequence
-  deriving (Show)
-
--- | User input, as-is.
+-- | User input, unchanged, as-is.
 type Input     = String
 
--- | Error hint or detailed info.
+-- | Detailed error info. Not user-friendly.
 type ErrorInfo = String
 
--- | The parser type shortcut.
+-- | The parser.
 type Parser = Parsec Void String
 
 ------------------------------
@@ -90,14 +92,14 @@ type Parser = Parsec Void String
 -- | Parses the pymble telnet command and returns
 -- either 'Command' object or the reason of the parsing failure.
 --
-parseCommand :: String -> Either RequestForAction Command
-parseCommand str
-    | noInput         str = Left $ NoInput 
-    | isTelnetControl str = Left $ TelnetControl (ord <$> str)
+parseAction :: String -> RequestForAction
+parseAction str
+    | noInput         str = NoInput
+    | isTelnetControl str = TelnetControl (ord <$> str)
     | otherwise =
         case (parse commandParser "" (strip str)) of
-          Left err -> Left $ UnknownCommand str (show err)
-          Right xs -> Right xs
+          Left err -> UnknownCommand str (show err)
+          Right xs -> PymbleCommand xs
   where
     noInput         = null . strip
     -- RFC-854, RFC-855
@@ -108,8 +110,8 @@ parseCommand str
 -- | Parses the pymble telnet command that is represented as 'ByteString'
 -- and returns either 'Command' object or the reason of the parsing failure.
 --
-parseCommandBS :: ByteString -> Either RequestForAction Command
-parseCommandBS = parseCommand . unpack
+parseActionBS :: ByteString -> RequestForAction
+parseActionBS = parseAction . unpack
 
 
 -- | Parser for the 'Command' api.

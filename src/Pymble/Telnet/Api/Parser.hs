@@ -30,6 +30,7 @@ import Control.Applicative ((<|>))
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (unpack)
 import Data.Void
+import Data.String.Utils (strip)
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -75,9 +76,13 @@ type Parser = Parsec Void String
 -- either 'Command' object or the reason of the parsing failure.
 --
 parseCommand :: String -> Either ParsingError Command
-parseCommand str = case (parse commandParser "" str) of
-  Left err -> Left "failed to parse" 
-  Right xs -> Right xs
+parseCommand str =
+  let cleanStr = strip str
+  in if null cleanStr
+      then Left "no input"
+      else case (parse commandParser "" cleanStr) of
+            Left err -> Left "failed to parse" 
+            Right xs -> Right xs
 
 
 -- | Parses the provided pymble telnet command that is represented as 'ByteString'

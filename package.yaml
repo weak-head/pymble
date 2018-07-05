@@ -18,6 +18,7 @@ library:
   source-dirs: src/
   dependencies:
   - JuicyPixels
+  - MissingH
   - bytestring
   - containers
   - data-default

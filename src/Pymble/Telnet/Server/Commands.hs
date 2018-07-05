@@ -36,7 +36,7 @@ import qualified Data.ByteString           as BS
 import qualified Data.ByteString.Char8     as BSC
 import qualified Network.Socket.ByteString as NBS
 
-import Pymble.PrettyPrint.Terminal (ColorScheme(..))
+import Pymble.PrettyPrint.Terminal
 ----------------------------------------------------------------------
 
 -- | The telnet command handler monad
@@ -83,20 +83,26 @@ data Environment = Environment {
 -- |
 --
 helpCmd :: CommandHandler ()
-helpCmd = undefined
+helpCmd = do
+  let usage = termMsg Info "\r\nUsage:"
+      help  = termMsg Warning "\r\nhelp -> todo"
+  writeSocket $ usage . help 
+
 
 
 -- |
 --
 viewConfigCmd :: CommandHandler ()
-viewConfigCmd = undefined 
+viewConfigCmd = do
+  writeSocket $ termMsg Warning "view config"
 
 
 -- |
 --
 setConfigCmd :: RenderConfig
              -> CommandHandler ()
-setConfigCmd = undefined
+setConfigCmd rc = do
+  writeSocket $ termMsg Warning "set config"
 
 
 -- |
@@ -104,13 +110,15 @@ setConfigCmd = undefined
 renderCmd :: String
           -> RenderConfig
           -> CommandHandler ()
-renderCmd url config = undefined
+renderCmd url config = do
+  writeSocket $ termMsg Warning "render"
 
 
 -- |
 --
 exitCmd :: CommandHandler ()
-exitCmd = undefined
+exitCmd = do
+  writeSocket $ termMsg Warning "exit"
 
 ----------------------------------------------------------------------
 

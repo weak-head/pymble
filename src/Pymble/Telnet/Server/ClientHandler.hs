@@ -27,6 +27,7 @@ import Network.Socket (close, Socket, SockAddr)
 import Pymble.AppConfig
 import Pymble.Telnet.Api.Parser
 import Pymble.Telnet.Server.Commands
+import Pymble.PrettyPrint.Terminal
 ----------------------------------------------------------------------
 
 
@@ -87,10 +88,14 @@ handleConnectedClient = do
 processClientRequests :: CommandHandler ()
 processClientRequests =
     void $ iterateWhile _csConnected $ do
-      readCommand >>= handleCommand >> get
+      prompt >> readCommand >>= handleCommand >> get
   where
+    -- Terminal prompt
+    prompt = writeSocket $ termMsg' Success "> "
+
     -- Get input from the client and parse it as 'Command'
     readCommand = readSocket >>= lift . return . parseCommandBS
+
     -- Handle parsing error or command
     handleCommand = \case
       Left err  -> parsingErrorHandler err
@@ -114,4 +119,6 @@ commandHandler = \case
 -- |
 --
 parsingErrorHandler :: ParsingError -> CommandHandler ()
-parsingErrorHandler = undefined
+parsingErrorHandler err = do
+  writeSocket $ termMsg' Error err
+  helpCmd

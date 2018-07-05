@@ -19,6 +19,7 @@ module Pymble.PrettyPrint.Terminal
     , MessageType(..)
     , termClear
     , termMsg
+    , termMsg'
     , termMsgIO
     ) where
 
@@ -150,13 +151,13 @@ data MessageType = Info | Warning | Success | Error
   deriving (Eq)
 
 
--- | Clear terminal.
+-- | Clear the terminal.
 --
 termClear :: ShowS
 termClear = showString "\ESC[2J"
 
 
--- | Composes message.
+-- | Composes a message.
 --
 termMsg :: MessageType -> String -> ShowS
 termMsg msgt = encodeColoredString (toColor msgt)
@@ -167,7 +168,13 @@ termMsg msgt = encodeColoredString (toColor msgt)
           Error   -> TC.Color16 1 -- red
 
 
--- | Outputs message directly to terminal.
+-- | Composes a message that starts with the new line.
+--
+termMsg' :: MessageType -> String -> ShowS
+termMsg' t m = showString "\r\n" . (termMsg t m)
+
+
+-- | Outputs message directly to the pymble server terminal.
 --
 termMsgIO :: MessageType -> String -> IO ()
 termMsgIO t m = putStrLn $ termMsg t m ""

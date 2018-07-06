@@ -3,14 +3,12 @@
 
 module Pymble.Telnet.Server.ClientHandler
   (
-  -- *
+  -- * Telnet client processing
     forkClient
-
-  -- *
   , handleNewClient
   , handleRequests
 
-  -- *
+  -- * Activity handlers
   , handleAction
   , handleCommand
   ) where
@@ -33,11 +31,8 @@ import Pymble.Telnet.Server.Commands
 import Pymble.PrettyPrint.Terminal
 ----------------------------------------------------------------------
 
--- | Telnet control sequence
-type ControlSequence = [Int]
 
-
--- | Forks a dedicated thread to process the connected client
+-- | Fork a dedicated thread to process the connected client.
 --
 forkClient :: Socket        -- ^ Socket object usable to send and receive data
                             --   on the client side
@@ -94,7 +89,7 @@ handleNewClient = do
 --
 handleRequests :: CommandHandler ()
 handleRequests = do
-    prompt
+    writePrompt
     void $ iterateWhile _csConnected $ do
       input <- unpack <$> readSocket
 
@@ -114,9 +109,12 @@ handleRequests = do
   where
     append s c   = c { _csInput = _csInput c ++ s }
     clearInput   = modify $ \c -> c { _csInput = "" }
-    prompt' bctl = if bctl then return () else prompt
-      
--- |
+    prompt' bctl = if bctl then return () else writePrompt
+
+
+-- | This is the main handler for all terminal
+-- related actions. This handler covers handling of
+-- all unknown commands, user commands and telnet control sequences.
 --
 handleAction :: RequestForAction -> CommandHandler ()
 handleAction = \case
@@ -127,7 +125,8 @@ handleAction = \case
     return ()
 
   UnknownCommand input errorMsg -> do
-    writeSocket $ termMsg Error "Failed to parse the input"
+    writeMessage Error "Failed to parse"
+    writeNewLine
     helpCmd
 
   PymbleCommand cmd -> do
@@ -137,7 +136,7 @@ handleAction = \case
     return ()
 
 
--- |
+-- | The root level handler for all user related commands.
 --
 handleCommand :: Command -> CommandHandler ()
 handleCommand = \case

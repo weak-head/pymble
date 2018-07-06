@@ -10,22 +10,23 @@ module Pymble.Telnet.Server.Commands
   , ClientState(..)
   , RenderConfig(..)
 
-  -- * API Commands
+  -- * API commands
   , helpCmd
   , viewConfigCmd
   , setConfigCmd
   , renderCmd
   , exitCmd
 
-  -- * Command helpers
+  -- * API helpers
   , writeLogStr
+  , writeMessage
+  , writeNewLine
+  , writePrompt
 
   -- * Low-level communication
   , readSocket
   , writeSocket
   , writeSocketStr
-  , newLine
-  , prompt
   ) where
 
 import Control.Monad.IO.Class (liftIO)
@@ -87,18 +88,17 @@ data Environment = Environment {
 --
 helpCmd :: CommandHandler ()
 helpCmd = do
-  let usage = termMsg Info "\r\nUsage:"
-      help  = termMsg Warning "\r\nhelp -> todo"
-  writeSocket $ usage . help
-  newLine
+  writeMessage Info "Usage:" >> writeNewLine
+  writeMessage Warning "help -> todo"
+  writeNewLine
 
 
 -- |
 --
 viewConfigCmd :: CommandHandler ()
 viewConfigCmd = do
-  writeSocket $ termMsg Warning "view config"
-  newLine
+  writeMessage Warning "view config"
+  writeNewLine
 
 
 -- |
@@ -106,8 +106,8 @@ viewConfigCmd = do
 setConfigCmd :: RenderConfig
              -> CommandHandler ()
 setConfigCmd rc = do
-  writeSocket $ termMsg Warning "set config"
-  newLine
+  writeMessage Warning "set config"
+  writeNewLine
 
 
 -- |
@@ -116,16 +116,16 @@ renderCmd :: String
           -> RenderConfig
           -> CommandHandler ()
 renderCmd url config = do
-  writeSocket $ termMsg Warning "render"
-  newLine
+  writeMessage Warning "render"
+  writeNewLine
 
 
 -- |
 --
 exitCmd :: CommandHandler ()
 exitCmd = do
-  writeSocket $ termMsg Warning "exit"
-  newLine
+  writeMessage Warning "exit"
+  writeNewLine
 
 ----------------------------------------------------------------------
 
@@ -147,6 +147,24 @@ writeLogStr message = do
 
   liftIO $ putStrLn logEntry
   tell $ showString logEntry
+
+
+-- | Write message to the client socket.
+--
+writeMessage :: MessageType -> String -> CommandHandler ()
+writeMessage t s = writeSocket $ termMsg t s
+
+
+-- | Write new line to the client socket.
+--
+writeNewLine :: CommandHandler ()
+writeNewLine = writeSocketStr "\r\n"
+
+
+-- | Write prompt to the client socket.
+--
+writePrompt :: CommandHandler ()
+writePrompt = writeMessage Prompt "> "
 
 ----------------------------------------------------------------------
 
@@ -170,15 +188,3 @@ writeSocketStr :: String -> CommandHandler ()
 writeSocketStr msg = do
   sock <- _csSocket <$> get
   liftIO $ NBS.sendAll sock (BSC.pack msg)
-
-
--- | Write new line to the client socket.
---
-newLine :: CommandHandler ()
-newLine = writeSocketStr "\r\n"
-
-
--- | Write prompt to the client socket.
---
-prompt :: CommandHandler ()
-prompt = writeSocket $ termMsg Success "> "

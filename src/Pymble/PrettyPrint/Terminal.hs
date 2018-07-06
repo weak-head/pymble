@@ -147,7 +147,13 @@ encodeReset = showString "\ESC[0;00m"
 --------------------------------------------------------
 
 -- | Type of the message to display on the terminal
-data MessageType = Info | Warning | Success | Error
+data MessageType
+  = Info 
+  | Warning 
+  | Success 
+  | Error
+  | Hint
+  | Prompt
   deriving (Eq)
 
 
@@ -162,10 +168,13 @@ termClear = showString "\ESC[2J"
 termMsg :: MessageType -> String -> ShowS
 termMsg msgt = encodeColoredString (toColor msgt)
   where toColor = \case
-          Info    -> TC.Color16 7 -- white 
-          Warning -> TC.Color16 3 -- yellow
-          Success -> TC.Color16 2 -- green
-          Error   -> TC.Color16 1 -- red
+          Info    -> TC.Color16 7  -- white 
+          Warning -> TC.Color16 3  -- yellow
+          Success -> TC.Color16 2  -- green
+          Error   -> TC.Color16 9  -- bright red
+          Hint    -> TC.Color16 8  -- bright black
+          Prompt  -> TC.Color16 10 -- bright green
+
 
 
 -- | Composes a message that starts with the new line.

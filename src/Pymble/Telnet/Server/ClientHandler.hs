@@ -126,11 +126,11 @@ handleAction = \case
   CRLF -> do
     return ()
 
-  UnknownCommand input errorMsg crlf -> do
+  UnknownCommand input errorMsg -> do
     writeSocket $ termMsg Error "Failed to parse the input"
     helpCmd
 
-  PymbleCommand cmd crlf -> do
+  PymbleCommand cmd -> do
     handleCommand cmd
 
   TelnetControl controlSequence -> do

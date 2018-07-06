@@ -10,7 +10,6 @@ module Pymble.Telnet.Api.Parser
   , Url
   , Input
   , ErrorInfo
-  , WithCRLF
   , parseAction
   , parseActionBS
 
@@ -50,11 +49,11 @@ import Pymble.PrettyPrint.Terminal (ColorScheme(..))
 -- or terminal itself. 
 --
 data RequestForAction 
-  = NoInput                                  -- ^ Input is whitespace string or empty
-  | CRLF                                     -- ^ Carriage return & Line feed
-  | PymbleCommand Command WithCRLF           -- ^ Pymble command
-  | UnknownCommand Input ErrorInfo WithCRLF  -- ^ The command is unknown or incorrectly formatted
-  | TelnetControl [Int]                      -- ^ Telnet control sequence
+  = NoInput                          -- ^ Input is whitespace string or empty
+  | CRLF                             -- ^ Carriage return & Line feed
+  | PymbleCommand Command            -- ^ Pymble command
+  | UnknownCommand Input ErrorInfo   -- ^ The command is unknown or incorrectly formatted
+  | TelnetControl [Int]              -- ^ Telnet control sequence
   deriving (Show)
 
 -- | This data model defines the command API
@@ -85,9 +84,6 @@ type Input     = String
 -- | Detailed error info. Not user-friendly.
 type ErrorInfo = String
 
--- | TBD: Windows and Linux line ending.
-type WithCRLF = Bool
-
 -- | The parser.
 type Parser = Parsec Void String
 
@@ -103,8 +99,8 @@ parseAction str
     | isTelnetControl str = TelnetControl (ord <$> str)
     | otherwise =
         case (parse commandParser "" (strip str)) of
-          Left err -> UnknownCommand str (show err) (withCRLF str)
-          Right xs -> PymbleCommand xs (withCRLF str)
+          Left err -> UnknownCommand str (show err)
+          Right xs -> PymbleCommand xs
   where
     isNull     = null . strip
     withCRLF   = endswith "\r\n"

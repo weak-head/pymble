@@ -383,22 +383,22 @@ spec = do
 parseWith :: Parser Command -> String -> RequestForAction
 parseWith parser str = case (parse parser "" str) of
   Left err -> fail
-  Right xs -> PymbleCommand xs
+  Right xs -> PymbleCommand xs False
 
 -- | No make our test cases pass, by ignoring the specific
 -- input and error messages.
 instance Eq RequestForAction where 
-  NoInput              == NoInput              = True
-  (UnknownCommand _ _) == (UnknownCommand _ _) = True
-  (TelnetControl _)    == (TelnetControl _)    = True
-  (PymbleCommand a)    == (PymbleCommand b)    = a == b
-  _                    ==  _                   = False
+  NoInput                == NoInput                = True
+  (UnknownCommand _ _ _) == (UnknownCommand _ _ _) = True
+  (TelnetControl _)      == (TelnetControl _)      = True
+  (PymbleCommand a v)    == (PymbleCommand b v')   = (a == b) && (v == v')
+  _                      ==  _                     = False
 
-fail   = UnknownCommand "" ""
+fail   = UnknownCommand "" "" False
 failNI = NoInput
 
-cmd  = PymbleCommand
-ccmd = cmd . UpdateConfig
+cmd  x = PymbleCommand x False
+ccmd   = cmd . UpdateConfig
 
 
 -- | Basically this is an invalid semigroup, but for us it works as expected

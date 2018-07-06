@@ -86,32 +86,36 @@ handleNewClient = do
 -- disconnected.
 --
 handleRequests :: CommandHandler ()
-handleRequests =
+handleRequests = do
+    prompt
     void $ iterateWhile _csConnected $ do
-      prompt
-      readAction >>= handleAction
-      newLine >> get
+      readAction >>= handleAction >> get
   where
-    -- Terminal prompt
-    prompt = writeSocket $ termMsg Success "> "
-
     -- Get input from the client and parse it as 'Command'
     readAction = readSocket >>= lift . return . parseActionBS
-
-    newLine = writeSocketStr "\r\n"
 
 
 -- |
 --
 handleAction :: RequestForAction -> CommandHandler ()
 handleAction = \case
-  NoInput -> return ()
-  CRLF    -> return ()
-  UnknownCommand input errorMsg -> do
+  NoInput -> do
+    return ()
+
+  CRLF -> do
+    prompt
+
+  UnknownCommand input errorMsg crlf -> do
     writeSocket $ termMsg' Error "Failed to parse the input"
-    helpCmd
-  PymbleCommand cmd -> handleCommand cmd
-  TelnetControl controlSequence -> return ()
+    helpCmd >> newLine
+    if crlf then prompt else return()
+
+  PymbleCommand cmd crlf -> do
+    handleCommand cmd >> newLine
+    if crlf then prompt else return()
+
+  TelnetControl controlSequence -> do
+    return ()
 
 
 -- |
@@ -126,3 +130,9 @@ handleCommand = \case
   where
     toRc (RenderSettings c w h) = RenderConfig c w h
 
+
+prompt :: CommandHandler ()
+prompt = writeSocket $ termMsg Success "> "
+
+newLine :: CommandHandler ()
+newLine = writeSocketStr "\r\n"

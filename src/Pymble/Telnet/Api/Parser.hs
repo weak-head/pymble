@@ -10,6 +10,7 @@ module Pymble.Telnet.Api.Parser
   , Url
   , Input
   , ErrorInfo
+  , WithCRLF
   , parseAction
   , parseActionBS
 
@@ -33,7 +34,7 @@ import Control.Applicative ((<|>))
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (unpack)
 import Data.Char (ord)
-import Data.String.Utils (strip)
+import Data.String.Utils (strip, endswith)
 import Data.Void
 
 import Text.Megaparsec
@@ -49,11 +50,11 @@ import Pymble.PrettyPrint.Terminal (ColorScheme(..))
 -- or terminal itself. 
 --
 data RequestForAction 
-  = NoInput                         -- ^ Input is whitespace string or empty
-  | CRLF                            -- ^ Carriage return & Line feed
-  | PymbleCommand Command
-  | UnknownCommand Input ErrorInfo  -- ^ The command is unknown or incorrectly formatted
-  | TelnetControl [Int]             -- ^ Telnet control sequence
+  = NoInput                                  -- ^ Input is whitespace string or empty
+  | CRLF                                     -- ^ Carriage return & Line feed
+  | PymbleCommand Command WithCRLF           -- ^ Pymble command
+  | UnknownCommand Input ErrorInfo WithCRLF  -- ^ The command is unknown or incorrectly formatted
+  | TelnetControl [Int]                      -- ^ Telnet control sequence
   deriving (Show)
 
 -- | This data model defines the command API
@@ -84,6 +85,9 @@ type Input     = String
 -- | Detailed error info. Not user-friendly.
 type ErrorInfo = String
 
+-- | TBD: Windows and Linux line ending.
+type WithCRLF = Bool
+
 -- | The parser.
 type Parser = Parsec Void String
 
@@ -94,16 +98,18 @@ type Parser = Parsec Void String
 --
 parseAction :: String -> RequestForAction
 parseAction str
-    | noInput         str = NoInput
+    | isCRLF          str = CRLF
+    | isNull          str = NoInput
     | isTelnetControl str = TelnetControl (ord <$> str)
     | otherwise =
         case (parse commandParser "" (strip str)) of
-          Left err -> UnknownCommand str (show err)
-          Right xs -> PymbleCommand xs
+          Left err -> UnknownCommand str (show err) (withCRLF str)
+          Right xs -> PymbleCommand xs (withCRLF str)
   where
-    noInput         = null . strip
-    -- RFC-854, RFC-855
-    -- http://mars.netanya.ac.il/~unesco/cdrom/booklet/HTML/NETWORKING/node300.html
+    isNull     = null . strip
+    withCRLF   = endswith "\r\n"
+    isCRLF str = withCRLF str && isNull str
+    -- RFC-854, RFC-855, http://mars.netanya.ac.il/~unesco/cdrom/booklet/HTML/NETWORKING/node300.html
     isTelnetControl = ((==) 255) . ord . head
 
 

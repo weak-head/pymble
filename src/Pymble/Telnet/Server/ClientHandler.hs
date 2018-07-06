@@ -20,8 +20,11 @@ import Control.Monad (void)
 import Control.Monad.Catch (finally)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (iterateWhile)
-import Control.Monad.Trans.RWS (execRWST, get)
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.RWS (execRWST, get, modify)
+import Data.ByteString.Char8 (unpack)
+import Data.Char (ord)
+import Data.String.Utils (endswith)
 import Network.Socket (close, Socket, SockAddr)
 
 import Pymble.AppConfig
@@ -29,6 +32,9 @@ import Pymble.Telnet.Api.Parser
 import Pymble.Telnet.Server.Commands
 import Pymble.PrettyPrint.Terminal
 ----------------------------------------------------------------------
+
+-- | Telnet control sequence
+type ControlSequence = [Int]
 
 
 -- | Forks a dedicated thread to process the connected client
@@ -62,6 +68,7 @@ forkClient sock sockAddr appConfig =
       , _csSockAddr      = sockAddr
       , _csConnected     = True
       , _csDefRenderConf = RenderConfig Nothing Nothing Nothing
+      , _csInput         = ""
       }
 
 
@@ -89,12 +96,26 @@ handleRequests :: CommandHandler ()
 handleRequests = do
     prompt
     void $ iterateWhile _csConnected $ do
-      readAction >>= handleAction >> get
+      input <- unpack <$> readSocket
+
+      modify $ append input
+      acc_input <- _csInput <$> get
+
+      let isControl   = (ord $ head input) == 255
+          isCommitted = endswith "\r\n" acc_input
+
+      case isCommitted || isControl of
+        False -> return ()
+        True  -> do
+          handleAction $ parseAction acc_input
+          clearInput >> prompt' isControl
+      
+      get
   where
-    -- Get input from the client and parse it as 'Command'
-    readAction = readSocket >>= lift . return . parseActionBS
-
-
+    append s c   = c { _csInput = _csInput c ++ s }
+    clearInput   = modify $ \c -> c { _csInput = "" }
+    prompt' bctl = if bctl then return () else prompt
+      
 -- |
 --
 handleAction :: RequestForAction -> CommandHandler ()
@@ -103,16 +124,14 @@ handleAction = \case
     return ()
 
   CRLF -> do
-    prompt
+    return ()
 
   UnknownCommand input errorMsg crlf -> do
-    writeSocket $ termMsg' Error "Failed to parse the input"
-    helpCmd >> newLine
-    if crlf then prompt else return()
+    writeSocket $ termMsg Error "Failed to parse the input"
+    helpCmd
 
   PymbleCommand cmd crlf -> do
-    handleCommand cmd >> newLine
-    if crlf then prompt else return()
+    handleCommand cmd
 
   TelnetControl controlSequence -> do
     return ()
@@ -129,10 +148,3 @@ handleCommand = \case
     Quit            -> exitCmd
   where
     toRc (RenderSettings c w h) = RenderConfig c w h
-
-
-prompt :: CommandHandler ()
-prompt = writeSocket $ termMsg Success "> "
-
-newLine :: CommandHandler ()
-newLine = writeSocketStr "\r\n"

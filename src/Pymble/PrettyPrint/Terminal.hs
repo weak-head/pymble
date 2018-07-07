@@ -93,7 +93,7 @@ prettyPrint arr =
     -- to the terminal-encoded representation
     convert maxWidth (w, h) =
       let (ch, tc) = arr ! (Z :. w :. h)
-          newl     = bool id (showString "\n") (w == maxWidth - 1)
+          newl     = bool id (showString "\r\n") (w == maxWidth - 1)
       in (encodeColoredChar tc ch) . newl
 
 

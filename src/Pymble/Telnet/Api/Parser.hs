@@ -249,7 +249,7 @@ uri = do
                 <|> try alphaNumChar
                 <|> try urlChar )
    
-    urlChar = oneOf ("%-+/;?~:.,#&@=[]" :: String)
+    urlChar = oneOf ("%-+/;?~:.,#&@=[]_*()" :: String)
 
 
 -- | Parses wrapped parser.

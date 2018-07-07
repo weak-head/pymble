@@ -204,10 +204,11 @@ spec = do
                  , "http://foo:bar@w1.superman.com/very/long/path.html?p1=v1&p2=v2#more-details"
                  , "https://secured.com:443"
                  , "ftp://ftp.bogus.com/~some/path/to/a/file.txt"
-                 , "http://www.foo.bar/segment1/segment2/some-resource.html"
+                 , "http://www.foo.bar/segment1/segment2/some-resource_2.html"
                  , "http://www.foo.bar/image-2.html?w=100&h=50"
+                 , "http://fs.seys.us/beer?utm_source=feedburner&amp;utm_medium=feed&amp;utm_campaign=Feed:+SergeySus+(Sergey+Sus+Photography+%C2%BB+Blog)&amp;utm_content=Google+Reader"
                  , "ftp://ftp.foo.bar/~john/doe?w=100&h=50"
-                 , "http://www.foo.bar/image.jpg?height=150&width=100"
+                 , "http://www.foo.bar/image.jpg?height=150&width=100&jkey=ff(fs*s)"
                  , "https://www.secured.com:443/resource.html?id=6e8bc430-9c3a-11d9-9669-0800200c9a66#some-header"
                  ]
       forM_ uris $ \uri ->

@@ -125,8 +125,7 @@ handleAction = \case
     return ()
 
   UnknownCommand input errorMsg -> do
-    writeMessage Error "Failed to parse"
-    writeNewLine
+    writeMessageLn Error "Failed to parse"
     helpCmd
 
   PymbleCommand cmd -> do

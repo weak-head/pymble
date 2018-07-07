@@ -20,6 +20,7 @@ module Pymble.Telnet.Server.Commands
   -- * API helpers
   , writeLogStr
   , writeMessage
+  , writeMessageLn
   , writeNewLine
   , writePrompt
 
@@ -29,6 +30,7 @@ module Pymble.Telnet.Server.Commands
   , writeSocketStr
   ) where
 
+import Control.Monad.Catch (catches)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.RWS
 import Data.List (intercalate)
@@ -39,6 +41,10 @@ import qualified Data.ByteString           as BS
 import qualified Data.ByteString.Char8     as BSC
 import qualified Network.Socket.ByteString as NBS
 
+import Pymble.Image.Convert (normalize, toDelayedAsciiArt)
+import Pymble.Image.Fontspec (courierFull)
+import Pymble.Image.Helpers (adviceSize, imageSize)
+import Pymble.Image.Storage (download, defLoadHandlers)
 import Pymble.PrettyPrint.Terminal
 ----------------------------------------------------------------------
 
@@ -110,14 +116,44 @@ setConfigCmd rc = do
   writeNewLine
 
 
--- |
+-- | Render ASCII art to terminal.
 --
 renderCmd :: String
           -> RenderConfig
           -> CommandHandler ()
 renderCmd url config = do
-  writeMessage Warning "render"
-  writeNewLine
+    (RenderConfig c w h) <- merge config <$> _csDefRenderConf <$> get
+
+    -- todo: write log
+    writeMessageLn Hint "Loading image..."
+    maybeImage <- liftIO $ (normalize <$> download url)
+                    `catches` defLoadHandlers
+
+    case maybeImage of
+      Right image -> do
+        let (width, height) = adviceSize (imageSize image) w h
+            color           = maybe Color16 id c
+            delayedArt      = toDelayedAsciiArt width height courierFull image
+
+        -- todo: write log
+        writeMessageLn Hint "Generating ASCII art..."
+        coloredArt <- liftIO $ evalAsTerminalColor color delayedArt
+
+        writeNewLine >> writeNewLine
+        writeSocket $ prettyPrint coloredArt
+        writeNewLine >> writeNewLine
+
+      Left err -> do
+        -- todo: write log
+        writeMessageLn Error err
+  where
+    -- merges explicitly specified and the default render configs,
+    -- on conflict priority goes to the first one 
+    (RenderConfig c w h) `merge` (RenderConfig c' w' h') =
+      RenderConfig
+        (maybe c' Just c)
+        (maybe w' Just w)
+        (maybe h' Just h)
 
 
 -- |
@@ -153,6 +189,11 @@ writeLogStr message = do
 --
 writeMessage :: MessageType -> String -> CommandHandler ()
 writeMessage t s = writeSocket $ termMsg t s
+
+
+-- | The same as 'writeMessage', but adds a newline character.
+writeMessageLn :: MessageType -> String -> CommandHandler ()
+writeMessageLn t s = writeMessage t s >> writeNewLine
 
 
 -- | Write new line to the client socket.

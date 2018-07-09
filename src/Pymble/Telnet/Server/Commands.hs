@@ -156,11 +156,11 @@ renderCmd url config = do
         (maybe h' Just h)
 
 
--- |
+-- | Close the connection to the server.
 --
 exitCmd :: CommandHandler ()
 exitCmd = do
-  writeMessage Warning "exit"
+  modify $ \c -> c { _csConnected = False }
   writeNewLine
 
 ----------------------------------------------------------------------

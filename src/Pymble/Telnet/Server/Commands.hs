@@ -94,46 +94,71 @@ data Environment = Environment {
 --
 helpCmd :: CommandHandler ()
 helpCmd = do
-    -- Usage header
-
+    -- Usage header ---------------------------- 
     info "Usage: " >> cmd "<command> "
       >> info "[" >> arg "<args>" >> info "]"
       >> nl >> nl
 
-    -- Commands
-
+    -- Commands --------------------------------
     info "Available commands:"
       >> nl >> nl
 
     cmd "  help" 
-      >> al 24 
-      >> info "Show this help text"
+      >> al 24 >> info "Show this help text"
       >> nl
 
     cmd "  config "
       >> info "[" >> arg "<args>" >> info "]"
-      >> al 13
-      >> info "Show/update default renderer config"
+      >> al 13 >> info "Show/update default renderer config"
       >> nl
 
     cmd "  r" >> info " | " >> cmd "render "
       >> info "[" >> arg "<args>" >> info "] " >> info "URL"
-      >> al 5 
-      >> info "Convert image to ASCII art"
+      >> al 5 >> info "Convert image to ASCII art"
       >> nl
 
     cmd "  q" >> info " | " >> cmd "quit" >> info " | " >> cmd "exit"
-      >> al 13 
-      >> info "Close the session"
+      >> al 13 >> info "Close the session"
       >> nl
 
-    -- Command args
+    -- Command args -----------------------------
+    nl
+    info "Available arguments:"
+      >> nl >> nl
+
+    arg "  w" >> info " | " >> arg "width "
+      >> hint " INT"
+      >> al 9 >> info "ASCII art width"
+      >> nl
+
+    arg "  h" >> info " | " >> arg "height "
+      >> hint "INT"
+      >> al 9 >> info "ASCII art height"
+      >> nl 
+
+    arg "  c" >> info " | " >> arg "color "
+      >> hint " SCHEME"
+      >> al 6 >> info "ASCII art color scheme" >> nl
+        >> al 15 >> hint "16"
+            >> al 17 >> info "Standard 16-color map"
+            >> nl
+        >> al 15 >> hint "256"
+            >> al 16 >> info "Standard 8-bit (256 color) map"
+            >> nl
+        >> al 15 >> hint "gs | grayscale"
+            >> al 5 >> info "Grayscale subset of 8-bit color map"
+            >> nl
+        >> al 15 >> hint "tc | truecolor"
+            >> al 5 >> info "24-bit TrueColor"
+            >> nl
+      >> nl
 
     -- Usage examples
 
     nl
   where
     info = writeMessage Info
+    hint = writeMessage Hint
     cmd  = writeMessage Command
     arg  = writeMessage CommandArg
     nl   = writeNewLine

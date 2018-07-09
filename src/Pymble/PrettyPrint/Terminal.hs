@@ -154,6 +154,8 @@ data MessageType
   | Error
   | Hint
   | Prompt
+  | Command
+  | CommandArg
   deriving (Eq)
 
 
@@ -172,9 +174,12 @@ termMsg msgt = encodeColoredString (toColor msgt)
           Warning -> TC.Color16 3  -- yellow
           Success -> TC.Color16 2  -- green
           Error   -> TC.Color16 9  -- bright red
+
           Hint    -> TC.Color16 8  -- bright black
           Prompt  -> TC.Color16 10 -- bright green
 
+          Command    -> TC.Color16 2 -- green
+          CommandArg -> TC.Color16 5 -- magenta
 
 
 -- | Composes a message that starts with the new line.

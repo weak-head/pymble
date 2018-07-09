@@ -94,9 +94,50 @@ data Environment = Environment {
 --
 helpCmd :: CommandHandler ()
 helpCmd = do
-  writeMessage Info "Usage:" >> writeNewLine
-  writeMessage Warning "help -> todo"
-  writeNewLine
+    -- Usage header
+
+    info "Usage: " >> cmd "<command> "
+      >> info "[" >> arg "<args>" >> info "]"
+      >> nl >> nl
+
+    -- Commands
+
+    info "Available commands:"
+      >> nl >> nl
+
+    cmd "  help" 
+      >> al 24 
+      >> info "Show this help text"
+      >> nl
+
+    cmd "  config "
+      >> info "[" >> arg "<args>" >> info "]"
+      >> al 13
+      >> info "Show/update default renderer config"
+      >> nl
+
+    cmd "  r" >> info " | " >> cmd "render "
+      >> info "[" >> arg "<args>" >> info "] " >> info "URL"
+      >> al 5 
+      >> info "Convert image to ASCII art"
+      >> nl
+
+    cmd "  q" >> info " | " >> cmd "quit" >> info " | " >> cmd "exit"
+      >> al 13 
+      >> info "Close the session"
+      >> nl
+
+    -- Command args
+
+    -- Usage examples
+
+    nl
+  where
+    info = writeMessage Info
+    cmd  = writeMessage Command
+    arg  = writeMessage CommandArg
+    nl   = writeNewLine
+    al n = info $ replicate n ' ' 
 
 
 -- |

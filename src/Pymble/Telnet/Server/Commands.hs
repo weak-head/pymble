@@ -90,7 +90,7 @@ data Environment = Environment {
 ----------------------------------------------------------------------
 
 
--- |
+-- | Output pymble help info.
 --
 helpCmd :: CommandHandler ()
 helpCmd = do
@@ -99,61 +99,84 @@ helpCmd = do
       >> info "[" >> arg "<args>" >> info "]"
       >> nl >> nl
 
-    -- Commands --------------------------------
+    -- Commands -------------------------------
     info "Available commands:"
-      >> nl >> nl
+      >> nl
 
     cmd "  help" 
-      >> al 24 >> info "Show this help text"
+      >> al 28 >> info "Show this help text"
       >> nl
 
     cmd "  config "
       >> info "[" >> arg "<args>" >> info "]"
-      >> al 13 >> info "Show/update default renderer config"
+      >> al 17 >> info "Show/update default renderer config"
       >> nl
 
     cmd "  r" >> info " | " >> cmd "render "
       >> info "[" >> arg "<args>" >> info "] " >> info "URL"
-      >> al 5 >> info "Convert image to ASCII art"
+      >> al 9 >> info "Convert image to ASCII art"
       >> nl
 
     cmd "  q" >> info " | " >> cmd "quit" >> info " | " >> cmd "exit"
-      >> al 13 >> info "Close the session"
+      >> al 17 >> info "Close the session"
       >> nl
 
-    -- Command args -----------------------------
+    -- Command args ----------------------------
     nl
     info "Available arguments:"
-      >> nl >> nl
+      >> nl
 
     arg "  w" >> info " | " >> arg "width "
       >> hint " INT"
-      >> al 9 >> info "ASCII art width"
+      >> al 18 >> info "ASCII art width"
       >> nl
 
     arg "  h" >> info " | " >> arg "height "
       >> hint "INT"
-      >> al 9 >> info "ASCII art height"
+      >> al 18 >> info "ASCII art height"
       >> nl 
 
     arg "  c" >> info " | " >> arg "color "
       >> hint " SCHEME"
-      >> al 6 >> info "ASCII art color scheme" >> nl
-        >> al 15 >> hint "16"
-            >> al 17 >> info "Standard 16-color map"
+      >> al 15 >> info "ASCII art color scheme" >> nl
+        >> al 16 >> hint "16"
+            >> al 16 >> info "Standard 16-color map"
             >> nl
-        >> al 15 >> hint "256"
-            >> al 16 >> info "Standard 8-bit (256 color) map"
+        >> al 16 >> hint "256"
+            >> al 15 >> info "Standard 8-bit (256 color) map"
             >> nl
-        >> al 15 >> hint "gs | grayscale"
-            >> al 5 >> info "Grayscale subset of 8-bit color map"
+        >> al 16 >> hint "gs" >> info " | " >> hint "grayscale"
+            >> al 4 >> info "Grayscale subset of 8-bit color map"
             >> nl
-        >> al 15 >> hint "tc | truecolor"
-            >> al 5 >> info "24-bit TrueColor"
+        >> al 16 >> hint "tc" >> info " | " >> hint "truecolor"
+            >> al 4 >> info "24-bit TrueColor"
             >> nl
       >> nl
 
-    -- Usage examples
+    -- Usage examples --------------------------
+    info "Usage examples:"
+      >> nl
+
+    al 2 >> p >> cmd "config"
+      >> al 24 >> info "Show default config"
+      >> nl
+
+    al 2 >> p >> cmd "config "
+      >> arg "c " >> hint "TrueColor " 
+      >> arg "w " >> hint "40"
+      >> al 7 >> info "Set default config"
+      >> nl
+
+    al 2 >> p >> cmd "r "
+      >> info "http://some.url/img.png"
+      >> al 5 >> info "Convert using default config"
+      >> nl
+
+    al 2 >> p >> cmd "r "
+      >> arg "color " >> hint "256 "
+      >> info "http://img.png"
+      >> al 4 >> info "Convert using explicit config"
+      >> nl
 
     nl
   where
@@ -163,6 +186,7 @@ helpCmd = do
     arg  = writeMessage CommandArg
     nl   = writeNewLine
     al n = info $ replicate n ' ' 
+    p    = writePrompt
 
 
 -- |

@@ -108,7 +108,7 @@ instance Exception ConnectionFailureException where
 -- | General failure.
 --
 data RetrievalFailureException =
-  RetrievalFailureException
+  RetrievalFailureException { _rfeRawException :: String }
   deriving (Show)
 
 instance Exception RetrievalFailureException where
@@ -143,7 +143,8 @@ defLoadHandlers =
                 ++ _cfeUrl ex ++ "\""
 
     , Handler $ \(ex :: RetrievalFailureException) ->
-        msg $ "Unable to load the image" ]
+        msg $ "Unable to load the image: " ++ _rfeRawException ex
+    ]
   where
     msg = return . Left
 
@@ -195,15 +196,24 @@ download url = do
       Right i -> return i
       Left  m -> throwIO $ ImageDecodeException m
   where 
+    -- General hi-level handler
     handler = \case
-      HttpExceptionRequest _ (StatusCodeException res _) ->
-        let (Status code msg) = responseStatus res 
-        in throwIO $ DownloadFailureException code (show msg)
-
-      HttpExceptionRequest _ (ConnectionFailure _) ->
-        throwIO $ ConnectionFailureException url
+      HttpExceptionRequest _ status ->
+        handleHttpException status
       
       InvalidUrlException _ _ ->
         throwIO $ InvalidUriException url
 
-      _ -> throwIO RetrievalFailureException
+      ex -> throwIO $ RetrievalFailureException $ show ex
+
+    -- Http specific handler
+    handleHttpException = \case
+        StatusCodeException res _ ->
+          let (Status code msg) = responseStatus res 
+          in throwIO $ DownloadFailureException code (show msg)
+
+        ConnectionFailure _ ->
+          throwIO $ ConnectionFailureException url
+
+        ex -> throwIO $ RetrievalFailureException $ show ex
+        

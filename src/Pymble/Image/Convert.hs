@@ -116,8 +116,8 @@ toDelayedAsciiArt width height bmap img =
       -- and provide the width and the height of
       -- the resulting ASCII art that make sense.
       -- We are just following the spec here.
-      charAreaWidth  = arrW `div` width
-      charAreaHeight = arrH `div` height
+      charAreaWidth  = (fromIntegral arrW) / (fromIntegral width)
+      charAreaHeight = (fromIntegral arrH) / (fromIntegral height)
   in R.traverse arr
       -- the shape of the ASCII art
       (\_ -> Z :. width :. height)
@@ -132,8 +132,8 @@ toDelayedAsciiArt width height bmap img =
     -- the complete set of coordinates of the image area
     -- that is being covered by the character with position (chX, chY)
     coordinates areaW areaH chX chY =
-      [(x, y) | x <- [(chX * areaW) .. (chX * areaW + areaW - 1)]
-              , y <- [(chY * areaH) .. (chY * areaH + areaH - 1)]]
+      [(x, y) | x <- [round (fromIntegral chX * areaW) .. round (fromIntegral chX * areaW + areaW - 1)]
+              , y <- [round (fromIntegral chY * areaH) .. round (fromIntegral chY * areaH + areaH - 1)]]
 
 
 -- | Given a list of 'RGBA8' colors unifies them

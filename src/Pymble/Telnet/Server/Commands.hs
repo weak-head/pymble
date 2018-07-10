@@ -232,23 +232,27 @@ renderCmd url config = do
     (RenderConfig c w h) <- merge config <$> _csDefRenderConf <$> get
 
     -- todo: write log
-    writeMessageLn Hint "Loading image..."
+    hint "Downloading image..."
     maybeImage <- liftIO $ (normalize <$> download url)
                     `catches` defLoadHandlers
 
     case maybeImage of
       Right image -> do
-        let (width, height) = adviceSize (imageSize image) w h
+        let isize@(iw, ih)  = imageSize image
+            (width, height) = adviceSize isize w h
             color           = maybe Color16 id c
             delayedArt      = toDelayedAsciiArt width height courierFull image
 
         -- todo: write log
-        writeMessageLn Hint "Generating ASCII art..."
+        hint $ concat [ "Converting "
+                      , show iw ++ "x" ++ show ih ++ " image to "
+                      , show width ++ "x" ++ show height ++ " ASCII art..."
+                      ] 
         coloredArt <- liftIO $ evalAsTerminalColor color delayedArt
 
-        writeNewLine >> writeNewLine
+        nl >> nl
         writeSocket $ prettyPrint coloredArt
-        writeNewLine >> writeNewLine
+        nl >> nl
 
       Left err -> do
         -- todo: write log
@@ -261,6 +265,9 @@ renderCmd url config = do
         (maybe c' Just c)
         (maybe w' Just w)
         (maybe h' Just h)
+
+    hint  = writeMessageLn Hint
+    nl    = writeNewLine
 
 
 -- | Close the connection to the server.

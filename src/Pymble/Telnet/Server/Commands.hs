@@ -189,21 +189,31 @@ helpCmd = do
     p    = writePrompt
 
 
--- |
+-- | Show default ASCII art renderer config.
 --
 viewConfigCmd :: CommandHandler ()
 viewConfigCmd = do
-  writeMessage Warning "view config"
-  writeNewLine
+    rc <- _csDefRenderConf <$> get
+    arg "color:  " >> clr rc >> nl
+    arg "width:  " >> wdt rc >> nl
+    arg "height: " >> hgt rc >> nl
+    nl
+  where 
+    arg   = writeMessage CommandArg
+    info  = writeMessage Info
+    nl    = writeNewLine
+    clr c = info $ show $ maybe Color16 id (_rcColor c)
+    wdt c = info $ maybe "*" show (_rcWidth c)
+    hgt c = info $ maybe "*" show (_rcHeight c)
 
 
--- |
+-- | Set default ASCII art renderer config.
 --
 setConfigCmd :: RenderConfig
              -> CommandHandler ()
 setConfigCmd rc = do
-  writeMessage Warning "set config"
-  writeNewLine
+  modify $ \c -> c { _csDefRenderConf = rc }
+  viewConfigCmd
 
 
 -- | Render ASCII art to terminal.

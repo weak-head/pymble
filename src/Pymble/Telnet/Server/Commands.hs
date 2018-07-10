@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 -- |
 --
 module Pymble.Telnet.Server.Commands
@@ -137,8 +138,8 @@ helpCmd = do
       >> nl 
 
     arg "  c" >> info " | " >> arg "color "
-      >> hint " SCHEME"
-      >> al 15 >> info "ASCII art color scheme" >> nl
+      >> hint " PALETTE"
+      >> al 14 >> info "ASCII art color palette" >> nl
         >> al 16 >> hint "16"
             >> al 16 >> info "Standard 16-color map"
             >> nl
@@ -202,9 +203,15 @@ viewConfigCmd = do
     arg   = writeMessage CommandArg
     info  = writeMessage Info
     nl    = writeNewLine
-    clr c = info $ show $ maybe Color16 id (_rcColor c)
-    wdt c = info $ maybe "*" show (_rcWidth c)
-    hgt c = info $ maybe "*" show (_rcHeight c)
+    clr c = info $ showColor $ maybe Color16 id (_rcColor c)
+    wdt c = info $ maybe "auto" showSize (_rcWidth c)
+    hgt c = info $ maybe "auto" showSize (_rcHeight c)
+    showColor = \case
+      Color16   -> "16 colors (4-bit)"
+      Xterm256  -> "256 colors (8-bit)"
+      Grayscale -> "8-bit grayscale"
+      TrueColor -> "True color (24-bit)"
+    showSize n = show n ++ " chars"
 
 
 -- | Set default ASCII art renderer config.

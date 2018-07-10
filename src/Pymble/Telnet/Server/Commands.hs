@@ -195,9 +195,9 @@ helpCmd = do
 viewConfigCmd :: CommandHandler ()
 viewConfigCmd = do
     rc <- _csDefRenderConf <$> get
-    arg "color:  " >> clr rc >> nl
-    arg "width:  " >> wdt rc >> nl
-    arg "height: " >> hgt rc >> nl
+    arg "Color palette:    " >> clr rc >> nl
+    arg "ASCII art width:  " >> wdt rc >> nl
+    arg "ASCII art height: " >> hgt rc >> nl
     nl
   where 
     arg   = writeMessage CommandArg

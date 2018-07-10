@@ -22,7 +22,7 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.RWS (execRWST, get, modify)
 import Data.ByteString.Char8 (unpack)
 import Data.Char (ord)
-import Data.String.Utils (endswith)
+import Data.String.Utils (strip, endswith)
 import Network.Socket (close, Socket, SockAddr)
 
 import Pymble.AppConfig
@@ -126,7 +126,10 @@ handleAction = \case
     return ()
 
   UnknownCommand input errorMsg -> do
-    writeMessageLn Error "Failed to parse"
+    writeMessage Error "Failed: \'"
+    writeMessage Hint $ strip input
+    writeMessage Error "\' is not a valid command"
+    writeNewLine >> writeNewLine
     helpCmd
 
   PymbleCommand cmd -> do

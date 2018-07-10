@@ -91,16 +91,20 @@ adviceSizeWithRatio ratio (iw, ih) (Just w) Nothing =
   let iwhRatio = (fromIntegral iw) / (fromIntegral ih)
       aspectH  = (fromIntegral w) * ratio
       realH    = aspectH / iwhRatio
-  in (w, round realH)
+  in adviceSizeWithRatio ratio (iw, ih) (Just w) (Just $ round realH)
 
 adviceSizeWithRatio ratio (iw, ih) Nothing  (Just h) =
   let iwhRatio = (fromIntegral iw) / (fromIntegral ih)
       aspectW  = (fromIntegral h) / ratio
       realW    = aspectW * iwhRatio
-  in (round realW, h)
+  in adviceSizeWithRatio ratio (iw, ih) (Just $ round realW) (Just h)
 
-adviceSizeWithRatio ratio (iw, ih) (Just w) (Just h) =
-  (w, h)
+adviceSizeWithRatio ratio (iw, ih) (Just w) (Just h)
+  -- to correctly convert the image to ASCII art
+  -- we need at least one pixel per ASCII art character
+  | iw < w    = adviceSizeWithRatio ratio (iw, ih) (Just iw) Nothing
+  | ih < h    = adviceSizeWithRatio ratio (iw, ih) Nothing   (Just ih)
+  | otherwise = (w, h)
 
 
 -- | Get the width and the height of the image.

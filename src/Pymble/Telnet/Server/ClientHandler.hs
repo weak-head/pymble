@@ -72,13 +72,13 @@ forkClient sock sockAddr appConfig =
 --
 handleNewClient :: CommandHandler ()
 handleNewClient = do
-  writeLogStr "Connected"
+  logInfo "Connected"
 
   handleRequests `finally` do
     -- we want to make sure that the client socket
     -- is being closed even if some unexpected exception happens
     get >>= liftIO . close . _csSocket
-    writeLogStr "Disconnected"
+    logInfo "Disconnected"
 
 
 -- | The main client processing loop.
@@ -103,13 +103,14 @@ handleRequests = do
         False -> return ()
         True  -> do
           handleAction $ parseAction acc_input
-          clearInput >> prompt' isControl
+          notConnected <- not . _csConnected <$> get
+          clearInput >> prompt' (isControl || notConnected)
       
       get
   where
-    append s c   = c { _csInput = _csInput c ++ s }
-    clearInput   = modify $ \c -> c { _csInput = "" }
-    prompt' bctl = if bctl then return () else writePrompt
+    append s c     = c { _csInput = _csInput c ++ s }
+    clearInput     = modify $ \c -> c { _csInput = "" }
+    prompt' ignore = if ignore then return () else writePrompt
 
 
 -- | This is the main handler for all terminal

@@ -18,7 +18,7 @@ module Pymble.Telnet.Server.Commands
   , exitCmd
 
   -- * API helpers
-  , writeLogStr
+  , logInfo
   , writeMessage
   , writeMessageLn
   , writeNewLine
@@ -265,10 +265,10 @@ exitCmd = do
 
 ----------------------------------------------------------------------
 
--- |
+-- | Append string to log.
 --
-writeLogStr :: String -> CommandHandler ()
-writeLogStr message = do
+logInfo :: String -> CommandHandler ()
+logInfo message = do
   now  <- show <$> liftIO getCurrentTime
   addr <- show . _csSockAddr <$> get
 

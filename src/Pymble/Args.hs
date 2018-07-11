@@ -65,20 +65,20 @@ directConvert = DirectConvert
  <$> (optional $ option auto $
            long    "width"
         <> short   'w'
-        <> help    "Width of the generated ASCII art (char)"
+        <> help    "ASCII art width"
         <> metavar "INT" )
 
  <*> (optional $ option auto $
            long    "height"
         <> short   'h'
-        <> help    "Height of the generated ASCII art (char)"
+        <> help    "ASCII art height"
         <> metavar "INT" )
 
  <*> (optional $ option auto $
            long    "color"
         <> short   'c'
-        <> help    "Color scheme of the generated ASCII art"
-        <> metavar "(16|256|gs|tc)" )
+        <> help    "ASCII art color palette"
+        <> metavar "16|256|gs|tc" )
 
  <*> (strArgument $ 
            metavar "URL" 

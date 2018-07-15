@@ -25,6 +25,10 @@
 
 <hr>
 
+![futurama](/img/futurama.png)
+
+<hr>
+
 ### Usage
 
 tbd

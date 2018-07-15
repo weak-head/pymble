@@ -248,8 +248,8 @@ uri = do
     urlStr = some ( try letterChar
                 <|> try alphaNumChar
                 <|> try urlChar )
-   
-    urlChar = oneOf ("%-+/;?~:.,#&@=[]_*()" :: String)
+
+    urlChar = oneOf ("!%-+/;?~:.,#&@=[]_*()" :: String)
 
 
 -- | Parses wrapped parser.

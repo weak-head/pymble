@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  pymble is a telnet server that converts images and graphics into colored ASCII art that is rendered on any ANSI compatible terminal
+  pymble is a telnet server that converts images into colored ASCII art, that is rendered on any ANSI compatible terminal
 </p>
 
 <hr>
@@ -41,13 +41,13 @@ You can use pretty much any telnet client to connect to the server. Once connect
 
 ![telnet-usage](/img/telnet-usage.png)
 
-The image is rendered directly in your terminal and you are limited to the capabilities of your telnet client. Some telnet clients do not support TrueColor, others could alter the color a little bit. Also there is a [minor inconsistency](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) of the default colors in the different terminals/clients. So just keep this in mind if you want to have a good color accuracy.
+The image is rendered directly in your terminal and you are limited to the capabilities of your telnet client (or terminal). Some telnet clients do not support TrueColor, others could alter the color a little bit. Also there is a [minor inconsistency](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) of the default colors in the different terminals/clients. So just keep this in mind if you want to have a good color accuracy.
 
 Another thing to consider is the font that is used to render the ASCII art. In case if you are relying on the automatic ASCII art width/height detection, all the image transformations and approximations would be done for the font with the aspect ratio of `0.58`. Mostly it works OK for `monofur`, `Menlo` or `Verdana`, but if you are using `Courier New` or something like `Times New Roman` they have a completely different aspect ratio and the resulting ASCII art would be stretched. So if you dont have a desired result, the good idea would be to explicitly specify the width and the height of the ASCII art, basically you should find the rendering settings that work the best for your setup.
 
 ### Command-line usage
 
-You can convert an image to ASCII art directly from the command line without a need to run the telnet server.
+You can convert an image to the ASCII art directly from the command line, without a need to run the telnet server.
 
 ``` sh
 

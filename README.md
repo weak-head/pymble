@@ -67,7 +67,7 @@ $ pymble -c 16 -w 80 http://some/url/img.png
 
 ## Building pymble
 
-Pymble is build using [Haskell Tool Stack](haskellstack.org). To build pymble, run:
+Pymble is build using [Haskell Tool Stack](http://haskellstack.org). To build pymble, run:
 
 ``` sh
 
